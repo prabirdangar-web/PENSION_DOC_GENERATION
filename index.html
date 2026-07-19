@@ -71,8 +71,31 @@
   .doc-btn.active{border-color:var(--gold);background:#fff7ec;}
   .doc-preview-wrap{flex:1;min-width:0;}
   .preview-toolbar{display:flex;gap:8px;margin-bottom:10px;}
-  /* ---------- Printable page ---------- */
-  .page{background:var(--paper);width:210mm;min-height:296mm;margin:0 auto 24px;padding:16mm 16mm 14mm;box-shadow:0 1px 8px rgba(0,0,0,.18);font-family:"Times New Roman",Georgia,serif;font-size:11.5pt;line-height:1.45;color:#111;}
+  
+  /* ---------- Printable page (A4 Strict Layout Controls) ---------- */
+  @page { size: portrait; margin: 15mm; }
+  @page landscape-page-setting { size: landscape; margin: 10mm; }
+
+  .page{background:var(--paper);width:210mm;min-height:296mm;margin:0 auto 24px;padding:16mm 16mm 14mm;box-shadow:0 1px 8px rgba(0,0,0,.18);font-family:"Times New Roman",Georgia,serif;font-size:11.5pt;line-height:1.45;color:#111;position:relative;page-break-after:always;}
+  
+  /* Landscape Document Overrides for Enclosure D & E */
+  .page.landscape-layout {
+    width: 297mm !important;
+    min-height: 210mm !important;
+    page: landscape-page-setting !important;
+  }
+  
+  /* Poster Size Half-A4 Setup for Cover Page Label */
+  .page.cover-poster-layout {
+    width: 210mm !important;
+    min-height: 148mm !important;
+    height: 148mm !important;
+    overflow: hidden;
+    border: 3px double var(--navy);
+    padding: 10mm !important;
+    background: #fffdf9;
+  }
+
   .page h2.doc-title{text-align:center;font-size:14pt;font-weight:bold;margin:2mm 0 4mm;letter-spacing:.4px;}
   .page h3.doc-sub{text-align:center;font-size:11pt;margin:-3mm 0 5mm;font-weight:bold;}
   .page .ref-line{font-size:10.5pt;margin-bottom:4mm;}
@@ -95,7 +118,6 @@
   .page .sig-line{margin-top:14mm;border-top:1px solid #222;width:70mm;padding-top:2mm;font-size:10.5pt;}
   .page .field-empty{color:#b33;font-style:italic;}
   
-  /* Strict table styles for statutory forms */
   .pension-table th { font-size: 9pt; line-height: 1.2; padding: 4px 2px; text-align: center; }
   .pension-table td { font-size: 9.5pt; padding: 5px 4px; }
   
@@ -112,13 +134,24 @@
     .doc-list{width:100%;flex:0 0 auto;position:static;flex-direction:row;flex-wrap:wrap;}
     .doc-btn{flex:1 1 auto;min-width:140px;}
     .page{width:100%;max-width:210mm;transform-origin:top left;padding:10mm;font-size:11.5pt;}
+    .page.landscape-layout { width:100% !important; min-height:auto !important; }
   }
+
+  /* ---------- Standardized Blueprint Print Engine Override ---------- */
   @media print{
-    body *{visibility:hidden;}
-    .print-area, .print-area *{visibility:visible;}
-    .print-area{position:absolute;left:0;top:0;width:100%;}
-    .page{box-shadow:none;margin:0;page-break-after:always;}
-    .page:last-child{page-break-after:auto;}
+    .sidebar, .topbar, .tabs, .doc-list, .preview-toolbar { display: none !important; }
+    body, .app, .main, .content, .doc-layout, .doc-preview-wrap, .print-area { 
+      display: block !important; 
+      width: 100% !important; 
+      margin: 0 !important; 
+      padding: 0 !important; 
+      min-height: auto !important; 
+      background: transparent !important; 
+      box-shadow: none !important; 
+    }
+    .page { box-shadow: none; margin: 0 auto !important; page-break-after: always; visibility: visible !important; }
+    .page * { visibility: visible !important; }
+    .page:last-child { page-break-after: auto; }
   }
 </style>
 </head>
@@ -399,6 +432,17 @@ function blank(txt){ return txt && String(txt).trim() ? txt : '<span class="fiel
 function safe(txt){ return (txt===undefined||txt===null) ? "" : txt; }
 
 /* =========================================================================
+   HOI / ADMINISTRATIVE STATUS RESOLUTION ENGINE
+   ========================================================================= */
+function hoiSignatory(t){
+  const status = upper(t.hoiStatus || t.designation || "");
+  if (status.includes("TEACHER-IN-CHARGE") || status.includes("HEADMASTER") || status.includes("HEADMISTRESS") || status.includes("TIC") || status.includes("HM")) {
+    return proper(t.hoiStatus || t.designation);
+  }
+  return t.adminStatus || "Administrator / Appointing Authority";
+}
+
+/* =========================================================================
    COMPUTE  -  replicates DATA sheet's internal formulas (I13..I27 etc.)
    ========================================================================= */
 function compute(t){
@@ -453,54 +497,43 @@ function compute(t){
 /* =========================================================================
    DOCUMENT TEMPLATES
    ========================================================================= */
-const DOC_LIST = [
-  {id:"COVER", name:"Cover Page", sub:"Application summary sheet"},
-  {id:"SB", name:"Service Book Certificates", sub:"8 certificate items + Leave certificate"},
-  {id:"AB", name:"Enclosure A &amp; B", sub:"Specimen signature / photograph sheet"},
-  {id:"E", name:"Enclosure E", sub:"Nomination - Life Time Arrear of Pension"},
-  {id:"D", name:"Enclosure D", sub:"Nomination - D.C.R. Gratuity"},
-  {id:"HRAD", name:"HRA Declaration", sub:"Employee's declaration on spouse HRA"},
-  {id:"HRAC", name:"HRA Certificate", sub:"HOI certificate on spouse HRA"},
-  {id:"NOLIA", name:"Liability / No-Liability Certificate", sub:"HOI to Pension Disbursing Officer"},
-  {id:"PAYC", name:"Pay Certificate", sub:"For pension / gratuity purpose"},
-  {id:"FLP", name:"Forwarding Letter", sub:"To D.I.(S.E.) - submission of application"},
-  {id:"FLCHO", name:"Charge Hand-over Forwarding Letter", sub:"To D.I.(S.E.) - e-Pension portal"},
-  {id:"APPNOLIA", name:"Application for No-Liability Cert.", sub:"By the pensioner"},
-  {id:"FLNOLIACPC", name:"No-Liability Letter to CPC", sub:"Regarding U.C. of SSM grants"},
-  {id:"FLNOLIA", name:"Forwarding Letter - No Liability", sub:"To D.I.(S.E.)"},
-  {id:"NOLIACERT", name:"No-Liability Certificate", sub:"To whom it may concern"},
-  {id:"RESC", name:"M.C. Resolution / Administrator Order", sub:"Charge hand-over resolution"},
-  {id:"CHO", name:"Charge Hand-over / Take-over", sub:"Outgoing &amp; incoming officer declaration"},
-  {id:"CPC", name:"No-Liability Certificate (CPC)", sub:"Regarding U.C. submission to CPC"}
-];
-
-function pageWrap(inner){ return `<div class="page">${inner}</div>`; }
 function letterhead(t){
-  return `<div class="letterhead"><div class="sc">${blank(proper(t.schoolName))}</div><div class="ad">${blank(proper(t.schoolAddress))}</div></div>`;
+  const diseLine = t.diseCode ? ` &nbsp;|&nbsp; DISE/UDISE Code: ${t.diseCode}` : "";
+  return `<div class="letterhead">
+    <div class="sc">${blank(upper(t.schoolName))}</div>
+    <div class="ad">${blank(proper(t.schoolAddress))}${diseLine}</div>
+  </div>`;
 }
-function hoiSignatory(t){
-  if(DESIGNATIONS.slice(0,3).includes(t.designation) || t.designation==="ASSISTANT TEACHER"|| t.designation==="CLERK" || t.designation==="GR-D STAFF"){
-    return proper(t.hoiStatus||t.designation);
-  }
-  return t.adminStatus||"";
+function pageWrap(innerHtml){
+  return `<div class="page">${innerHtml}</div>`;
 }
-
 function docCOVER(t,c){
-  return pageWrap(`
-    ${letterhead(t)}
-    <p class="small">Mail Id: ${blank(t.schoolMail)} &nbsp;&nbsp; Mobile No: ${blank(t.hoiMobile)} [HOI]</p>
-    <h2 class="doc-title">Application for Sanctioning Pension, Gratuity and Other Admissible Retirement Benefits</h2>
-    <p class="center small">${upper("Sub-Division:: "+safe(t.schoolSubDiv))}</p>
-    <table>
-      <tr><td style="width:45%">Name of the Employee</td><td>${blank(proper(t.staffName))}</td></tr>
-      <tr><td>Designation of the Employee</td><td>${blank(t.designation)}</td></tr>
-      <tr><td>Mobile No. of the Employee</td><td>${blank(t.employeeMobile)}</td></tr>
-      <tr><td>Date of Retirement on Superannuation</td><td>${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):'<span class="field-empty">enter DOB</span>'}</td></tr>
-      <tr><td>Employee ID</td><td>${blank(t.employeeCode)}</td></tr>
-      <tr><td>Application ID</td><td>${blank(t.applicationId)}</td></tr>
-    </table>
-    <div class="sig-block"></div>
-  `);
+  return `<div class="page cover-poster-layout">
+    <div style="border:1px solid var(--navy); height:100%; padding:8mm; position:relative; display:flex; flex-direction:column; justify-content:space-between;">
+      <div style="text-align:center;">
+        <div style="font-size:16pt; font-weight:bold; color:var(--navy); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2mm;">${blank(upper(t.schoolName))}</div>
+        <div style="font-size:10pt; color:#444; font-weight:600; margin-bottom:4mm;">${blank(proper(t.schoolAddress))}</div>
+        <div style="border-top:2px solid var(--navy); width:60mm; margin:0 auto 4mm auto;"></div>
+        <h2 style="font-size:13pt; font-weight:bold; color:var(--navy-dark); text-transform:uppercase; margin:2mm 0; letter-spacing:0.3px; line-height:1.3;">PENSION APPLICATION CASE FILE</h2>
+        <div style="font-size:9.5pt; color:var(--muted); font-weight:bold;">SUB-DIVISION: ${upper(safe(t.schoolSubDiv))} &nbsp;|&nbsp; TREASURY: ${upper(safe(t.treasury))}</div>
+      </div>
+      
+      <div style="margin:4mm 0; background:rgba(27,58,92,0.03); padding:4mm; border-radius:4px;">
+        <table style="width:100%; margin:0; font-size:10.5pt; border:none;">
+          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE NAME:</td><td style="font-weight:bold; padding:4px 0; border:none; color:var(--navy-dark); font-size:11pt;">${blank(upper(t.staffName))}</td></tr>
+          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">DESIGNATION:</td><td style="font-weight:bold; padding:4px 0; border:none;">${blank(upper(t.designation))}</td></tr>
+          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">RETIREMENT DATE:</td><td style="font-weight:bold; padding:4px 0; border:none; color:#a4322a;">${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):'[DOB REQUIRED]'}</td></tr>
+          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE CODE:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.employeeCode)}</td></tr>
+          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">APPLICATION ID:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.applicationId)}</td></tr>
+        </table>
+      </div>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:8.5pt; color:var(--muted); border-top:1px dashed var(--line); padding-top:2mm;">
+        <div>DISE CODE: ${blank(t.diseCode)}</div>
+        <div>MOBILE: ${blank(t.employeeMobile)}</div>
+      </div>
+    </div>
+  </div>`;
 }
 
 function docSB(t,c){
@@ -545,26 +578,22 @@ function docSB(t,c){
       <li>The incumbent enjoyed ${blank(t.medicalLeave)} days Medical Leave with full average pay, ${blank(t.halfPayLeave)} days Half Pay Leave, ${blank(t.extraOrdinaryLeave)} days Extra Ordinary Leave and ${blank(t.specialLeave)} days Special Leave, and no other leave was enjoyed by ${hisHer(g)} other than mentioned above during the tenure i.e. from ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date of ${hisHer(g)} service, and granted by M.C. / Administrator / competent authority; other leave if any has also been approved by the competent authority.</li>
       <li>The service rendered by ${himHer(g)} has been satisfactory and ${heshe(g)} was present on both the closing and reopening date of each long vacation throughout ${hisHer(g)} period of service since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date without any break of service.</li>
     </ol>
-    <div class="sig-line">Signature of the Headmaster / Head of the Institution / Office Seal</div>
+    <div class="sig-line">Signature of the ${blank(upper(hoiSignatory(t)))} / Office Seal</div>
   `);
 }
 
 function docAB(t,c){
   const renderSigSet = (setNumber) => `
-    <table style="width:100%; border:none; margin:15px 0 25px 0;">
-      <tr style="border:none;">
-        <td style="width:60%; border:none; padding:5px 0; text-align:left; vertical-align:middle; line-height: 2;">
-          <div><strong>1st Signature:</strong> _____________________________________</div>
-          <div><strong>2nd Signature:</strong> _____________________________________</div>
-          <div><strong>3rd Signature:</strong> _____________________________________</div>
-        </td>
-        <td style="width:40%; border:none; padding:5px 0; text-align:right; vertical-align:bottom;">
-          <div style="display:inline-block; border-top:1px solid #111; width:65mm; text-align:center; padding-top:4px; font-weight:bold; font-size:10.5pt;">
-            Signature Attested
-          </div>
-        </td>
-      </tr>
-    </table>
+    <div style="margin-top: 15px; margin-bottom: 25px;">
+      <div style="text-align:left; font-weight:bold; font-size:10.5pt; margin-bottom: 8px;">
+        <span style="border-bottom:1px solid #111; padding-bottom:2px; width:65mm; display:inline-block; text-align:center;">Signature Attested</span>
+      </div>
+      <div style="line-height: 2.2; text-align:left; padding-left:5px;">
+        <div><strong>1st Signature:</strong> _____________________________________</div>
+        <div><strong>2nd Signature:</strong> _____________________________________</div>
+        <div><strong>3rd Signature:</strong> _____________________________________</div>
+      </div>
+    </div>
     ${setNumber < 3 ? '<hr style="border:none; border-top:1px dashed #ccc; margin:15px 0;">' : ''}
   `;
 
@@ -617,18 +646,26 @@ function docE(t,c){
   
   for(let i=0; i<rowCount; i++){
     const alt = alternates[i];
-    const altAge = alt ? ageString(alt.dob, c.dor) : "";
+    const altAge = alt ? dateDiffY(toDate(alt.dob), c.dor) : 0;
+    const isMinor = alt && alt.dob && (Number(altAge) < 18);
+    
     let row = "<tr>";
     if(i===0){
-      row += `<td rowspan="${rowCount}" style="width:16%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:18%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
       row += `<td rowspan="${rowCount}" style="width:8%;" class="center">${blank(proper(t.spouseRelation))}</td>`;
       row += `<td rowspan="${rowCount}" style="width:9%;" class="center">${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}</td>`;
       row += `<td rowspan="${rowCount}" style="width:13%;">If primary nominee is minor, name/address of person who may receive arrear during minority</td>`;
     }
-    row += `<td style="width:16%;">${alt ? `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span>` : ""}</td>`;
+    
+    let altNameCell = "";
+    if (alt) {
+      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)} AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}</span>`;
+    }
+    
+    row += `<td style="width:18%;">${altNameCell}</td>`;
     row += `<td style="width:8%;" class="center">${alt ? blank(proper(alt.rel)) : ""}</td>`;
-    row += `<td style="width:9%;" class="center">${alt ? blank(fmtDate(alt.dob,"dd-mm-yyyy")) : ""}</td>`;
-    row += `<td style="width:13%;">${alt && Number(altAge) < 18 ? "Minor - Guardian details required" : ""}</td>`;
+    row += `<td style="width:9%;" class="center">${alt ? (isMinor ? "NA" : blank(fmtDate(alt.dob,"dd-mm-yyyy"))) : ""}</td>`;
+    row += `<td style="width:13%;">${alt && isMinor ? "Minor - Guardian details required" : ""}</td>`;
     if(i===0){
       row += `<td rowspan="${rowCount}" style="width:10%;" class="center">Death / Invalidity</td>`;
     }
@@ -636,7 +673,7 @@ function docE(t,c){
     rows.push(row);
   }
 
-  return pageWrap(`
+  return `<div class="page landscape-layout">
     <div style="font-family:'Times New Roman', Georgia, serif; font-size:11.3pt; line-height:1.4;">
       <div style="text-align:right; font-weight:bold; font-size:12pt; margin-bottom:5px;">Enclosure &mdash; &lsquo;E&rsquo;</div>
       <h2 class="doc-title" style="margin: 0 0 2px 0;">Nomination for Payment of Life Time Arrear of Pension</h2>
@@ -644,7 +681,7 @@ function docE(t,c){
       
       <p style="margin-bottom:4px;">Pension disbursing Authority / Head of Office</p>
       <p style="margin-bottom:4px;">Name of the Bank/Treasury/Accountant General, West Bengal: <strong class="blank" style="min-width:200px;">${upper(blank(t.treasury))} Treasury</strong> &nbsp;&nbsp;&nbsp; Bank: <strong class="blank" style="min-width:140px;">${upper(blank(t.spouseBankName))}</strong></p>
-      <p style="margin-bottom:12px;">Place: <strong class="blank" style="min-width:280px;">${upper(blank(t.schoolName))}</strong> &nbsp;&nbsp;&nbsp; Branch: <strong class="blank" style="min-width:140px;">${upper(blank(t.spouseBranchName))}</strong> &nbsp;&nbsp;&nbsp; A/c. No: <strong class="blank" style="min-width:140px;">${blank(t.spouseAccountNo)}</strong></p>
+      <p style="margin-bottom:12px;">Place: ____________________ &nbsp;&nbsp;&nbsp; Branch: <strong class="blank" style="min-width:140px;">${upper(blank(t.spouseBranchName))}</strong> &nbsp;&nbsp;&nbsp; A/c. No: <strong class="blank" style="min-width:140px;">${blank(t.spouseAccountNo)}</strong></p>
       
       <p style="margin-bottom:12px;">I <strong class="blank" style="min-width:350px;">${upper(blank(t.staffName))}</strong> hereby nominate the person named below <br>
       <span style="font-size:10pt; font-style:italic;">(Name of the Pensioner in capital letters)</span><br>
@@ -656,7 +693,7 @@ function docE(t,c){
             <th>Name and address of nominees</th>
             <th>Relationship with pensioner</th>
             <th>Date of Birth</th>
-            <th>If nominee is minor, name, name and address of persons who may receive the said pension during the nominee's minority</th>
+            <th>If nominee is minor, name and address of persons who may receive the said pension during the nominee's minority</th>
             <th>Name and address of other nominee in case the nominee under Col. (1) predeceases the pensioner</th>
             <th>Relationship with pensioner</th>
             <th>Date of Birth if the other nominee is minor</th>
@@ -674,7 +711,7 @@ function docE(t,c){
       
       <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:flex-start;">
         <div style="text-align:left; width:50%;">
-          <p style="margin-bottom:20px;">Place : <strong>${proper(blank(t.schoolName))}</strong></p>
+          <p style="margin-bottom:20px;">Place : ____________________</p>
           <p style="margin-bottom:4px;">Witness : Signature, Name &amp; Address :</p>
           <div style="border-bottom:1px solid #333; height:10mm; width:75mm; margin-bottom:8px;">1.</div>
           <div style="border-bottom:1px solid #333; height:10mm; width:75mm; margin-bottom:20px;">2.</div>
@@ -682,31 +719,14 @@ function docE(t,c){
         </div>
         
         <div style="text-align:right; width:45%; display:flex; flex-direction:column; align-items:flex-end;">
-          <p style="margin-bottom:35px;">Date : <strong>${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""}</strong></p>
+          <p style="margin-bottom:35px;">Date : ____________________</p>
           <div style="border-top:1px solid #111; width:75mm; text-align:center; padding-top:4px; margin-top:40px;">
             <strong>Signature (or thumb impression of<br>illiterate) and name of pensioner<br>and address</strong>
           </div>
         </div>
       </div>
-      
-      <div style="border-top:1px dashed #000; margin-top:20px; padding-top:10px;">
-        <p style="font-weight:bold; margin-bottom:4px;">Acknowledgement to be sent by the Pension Disbursing Authority/Head of Office</p>
-        <p>Certified that application / nomination has been received from Shri / Smt. <strong class="blank" style="min-width:250px;">${upper(blank(t.staffName))}</strong> whose address is <strong class="blank" style="min-width:350px;">${proper(blank(t.selfSpouseAddress))}</strong>.</p>
-        
-        <div style="display:flex; justify-content:space-between; margin-top:25px;">
-          <div>
-            Place : ____________________<br><br>
-            Date : ____________________
-          </div>
-          <div style="text-align:center; width:70mm;">
-            <div style="border-top:1px solid #111; padding-top:4px; font-weight:bold; font-size:10pt;">
-              (Name of Pensioner)<br>Signature of the Pension Disbursing Authority<br>Head of Office<br>Full Address :
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  `);
+  </div>`;
 }
 
 function docD(t,c){
@@ -724,21 +744,30 @@ function docD(t,c){
   for(let i=0; i<rowCount; i++){
     const alt = alternates[i];
     const sharePct = alt ? (anyShareEntered ? (Number(alt.share)||0) : equalShare) : 0;
+    const altAge = alt ? ageString(alt.dob, c.dor) : 0;
+    const isMinor = alt && alt.dob && (Number(altAge) < 18);
+    
     let row = "<tr>";
     if(i===0){
-      row += `<td rowspan="${rowCount}" style="width:22%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:24%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
       row += `<td rowspan="${rowCount}" style="width:10%;" class="center">${blank(proper(t.spouseRelation))}</td>`;
-      row += `<td rowspan="${rowCount}" style="width:7%;" class="center">${t.spouseDob ? ageString(t.spouseDob, c.dor) : ""}</td>`;
+      row += `<td rowspan="${rowCount}" style="width:8%;" class="center">${t.spouseDob ? ageString(t.spouseDob, c.dor) : ""}</td>`;
       row += `<td rowspan="${rowCount}" style="width:11%;" class="center">100%</td>`;
       row += `<td rowspan="${rowCount}" style="width:12%;" class="center">Death / Invalidity</td>`;
     }
-    row += `<td style="width:26%;">${alt ? `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span>` : ""}</td>`;
-    row += `<td style="width:12%;" class="center">${alt ? `${sharePct}% (Rs. ${inr((c.gratuityAmount * sharePct)/100)})` : ""}</td>`;
+    
+    let altNameCell = "";
+    if(alt) {
+      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)} AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}</span>`;
+    }
+    
+    row += `<td style="width:25%;">${altNameCell}</td>`;
+    row += `<td style="width:10%;" class="center">${alt ? (isMinor ? "NA" : `${sharePct}% (Rs. ${inr((c.gratuityAmount * sharePct)/100)})`) : ""}</td>`;
     row += "</tr>";
     rows.push(row);
   }
 
-  return pageWrap(`
+  return `<div class="page landscape-layout">
     <div style="font-family:'Times New Roman', Georgia, serif; font-size:11.3pt; line-height:1.45;">
       <div style="text-align:right; font-weight:bold; font-size:12pt; margin-bottom:5px;">Enclosure &mdash; &lsquo;D&rsquo;</div>
       <h2 class="doc-title" style="margin: 0 0 2px 0;">Nomination for Payment of Death-Cum-Retirement Gratuity</h2>
@@ -770,21 +799,13 @@ function docD(t,c){
 
       <p style="margin-bottom:12px;">This nomination supersedes the nomination made by me earlier on ____________________ which stands cancelled.</p>
       
-      <p style="margin-bottom:20px;">Dated this <strong class="blank" style="min-width:60px;">${c.dor?String(c.dor.getDate()):""}</strong> day of <strong class="blank" style="min-width:100px;">${c.dor?MONTHS[c.dor.getMonth()]:""}</strong> 20<strong class="blank" style="min-width:40px;">${c.dor?String(c.dor.getFullYear()).slice(2):""}</strong> at <strong class="blank" style="min-width:200px;">${proper(blank(t.schoolName))}</strong></p>
+      <p style="margin-bottom:20px;">Dated this ____________________ day of ____________________ 20____ at ____________________</p>
 
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:25px;">
         <div style="width:50%;">
           <p style="margin-bottom:4px;">Witness to Signature :</p>
           <div style="border-bottom:1px solid #333; height:8mm; width:70mm; margin-bottom:6px;">(1)</div>
           <div style="border-bottom:1px solid #333; height:8mm; width:70mm; margin-bottom:15px;">(2)</div>
-          
-          <div style="font-size:9pt; line-height:1.3; color:#222; margin-top:15px;">
-            <strong>Note :</strong><br>
-            (1) The employee shall draw lines across the blank space below the last entry to prevent the insertion of any name after he has signed.<br>
-            (2) Fourth column should be filled in so as to cover the whole amount of gratuity.<br>
-            (3) The amount / share of gratuity shown in last column to cover the whole amount / share payable to the original nominee.<br>
-            * Strike out, if not applicable.
-          </div>
         </div>
         
         <div style="width:45%; text-align:right; display:flex; flex-direction:column; align-items:flex-end;">
@@ -796,10 +817,9 @@ function docD(t,c){
           </div>
         </div>
       </div>
-      
       <p style="margin-top:10px; font-size:10pt;">Date : ___________________</p>
     </div>
-  `);
+  </div>`;
 }
 
 function docHRAD(t,c){
@@ -809,7 +829,7 @@ function docHRAD(t,c){
     `My ${wifeHusband(g)} ${g==="MALE"?"Smt.":"Sri"} ${proper(t.spouseName)} is serving as ${proper(t.spouseDesignation)} in ${proper(t.spouseOffice)} under ${proper(t.spouseDept)} since ${fmtDate(t.spouseDoj,"dd-mm-yyyy")}, retiring on ${fmtD(c.spouseDor,"dd-mm-yyyy")}. HRA drawn by both of us is within GA rules${Number(t.hraOverdrawn)>0?`. Excess HRA of Rs.${inr(t.hraOverdrawn)} refunded via TR-7. ${safe(t.challanNoDate)}`:"."}`);
   return pageWrap(`
     <p><strong>To</strong></p>
-    <p>${blank(hoiSignatory(t))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
+    <p>The ${blank(upper(hoiSignatory(t)))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
     <p><strong>Sub: Declaration regarding Employment / Non-Employment and HRA of the Spouse</strong></p>
     <p>Sir / Madam,</p>
     <p>I, ${blank(proper(t.staffName))}; ${blank(t.designation)} of this school, do hereby declare that my ${wifeHusband(g)} ${blank(proper(t.spouseName))} - ${body}</p>
@@ -825,7 +845,7 @@ function docHRAC(t,c){
     ${letterhead(t)}
     <h2 class="doc-title">Certificate regarding Employment / Non-Employment and HRA of the Spouse</h2>
     <p>${docSBEmploymentCertText(t,c)}</p>
-    <div class="sig-line" style="margin-top:16mm;">Signature of the Headmaster / Head of the Institution / Office Seal</div>
+    <div class="sig-line" style="margin-top:16mm;">Signature of the ${blank(upper(hoiSignatory(t)))} / Office Seal</div>
   `);
 }
 function docSBEmploymentCertText(t,c){
@@ -835,7 +855,7 @@ function docSBEmploymentCertText(t,c){
     return `Certified that ${blank(proper(t.spouseName))}; ${wifeHusband(g)} of ${proper(t.staffName)} is serving / served to the post of ${blank(proper(t.spouseDesignation))} in ${blank(proper(t.spouseOffice))} under the ${blank(proper(t.spouseDept))} since ${blank(fmtDate(t.spouseDoj,"dd-mm-yyyy"))} and to be retired on ${fmtD(c.spouseDor,"dd-mm-yyyy")}. House Rent drawn by both of them is as per GA rules and within the prescribed limit throughout their service.`;
   }
   if(["HOUSEWIFE","NOT IN SERVICE"].includes(t.spouseStatus)){
-    return `Certified that ${blank(proper(t.spouseName))}; ${g==="MALE"?"Wife":"Husband"} of ${proper(t.staffName)} is ${g==="MALE"?"Housewife and not in service":"Not in Service"}. ${heShe(sg)} was not engaged in any service under the Government of India or any State Government Undertaking or any statutory or Local body, Educational Institution, etc. at anywhere and anytime since or before their marriage, and hence no question for drawn of HRA by ${himHer(sg)}. HRA drawn by ${proper(t.staffName)} is as per Grant-in-Aid rules and within the prescribed limit throughout ${hisHer(g)} service.`;
+    return `Certified that ${blank(proper(t.spouseName))}; ${g==="MALE"?"Wife":"Husband"} of ${proper(t.staffName)} is ${g==="MALE"?"Housewife and not in service":"Not in Service"}. ${heShe(sg)} was not engaged in any service under the Government of India or any State Government Undertaking or any statutory or Local body, Educational Institution, etc. at anywhere and anytime since or before their marriage, and hence no question for drawn of HRA by ${himHer(sg)}. HRA drawn by ${proper(t.staffName)} is as per Grant-in-Aid rules and within the prescribed limit throughout ${hisHer(g)} service.`
   }
   if(t.spouseStatus==="UN MARRIED") return `Certified that ${proper(t.staffName)} is Unmarried.`;
   return "";
@@ -844,7 +864,7 @@ function docSBEmploymentCertText(t,c){
 function docNOLIA(t,c){
   const g=t.gender;
   return pageWrap(`
-    <p class="small">(To be filled in by the Head of the Institution / Administrator / Secretary / Sub-Inspector-Circle)</p>
+    <p class="small">(To be filled in by the Appointing Authority / Head of the Office / Sub-Inspector (Circle))</p>
     <h2 class="doc-title">Liability / No-Liability Certificate</h2>
     <p class="small center">To be issued on the date of superannuation by the appointing Authority / Head of the Office / Sub-Inspector (Circle)</p>
     <div class="to-block"><p>To<br>The Pension Disbursing Officer / Treasury Officer<br>${blank(t.treasury)}</p></div>
@@ -858,7 +878,7 @@ function docNOLIA(t,c){
       <li>No Provisional Pension and no Provisional Gratuity have been sanctioned to ${himHer(g)}.</li>
       <li>${HisHer(g)} pensionary benefits may be released accordingly.</li>
     </ol>
-    <div class="sig-line" style="margin-top:16mm;">Signature of the Headmaster / Head of the Institution / Secretary / Administrator / Sub-Inspector (Circle) — Office Seal</div>
+    <div class="sig-line" style="margin-top:16mm;">Signature of the ${blank(upper(hoiSignatory(t)))} — Office Seal</div>
   `);
 }
 
@@ -871,7 +891,7 @@ function docPAYC(t,c){
     ? `As the annual increment in this scale falls due on the 1st July, and ${fmtD(incDate,"dd-mm-yyyy")} falls before the date of Superannuation, ${hisHer(g)} pay will be raised with effect from ${fmtD(incDate,"dd-mm-yyyy")} to Rs. ${inr(t.lastBasicPay)}/- p.m., which will remain the fixed and final Basic Pay up to the date of ${hisHer(g)} Superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""}.`
     : `No further annual increment (due on 1st July) falls before the date of Superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""}; hence ${hisHer(g)} Basic Pay remains fixed at Rs. ${inr(t.lastBasicPay)}/- p.m. up to that date.`;
   return pageWrap(`
-    <p class="small">(To be filled in by the Head of the Institution / Administrator / Secretary / Sub-Inspector-Circle)</p>
+    <p class="small">(To be filled in by the Appointing Authority / Head of the Office)</p>
     <h2 class="doc-title">Pay Certificate</h2>
     <p class="small center">(For Retirement / Death Case only)</p>
     <p>Pay certificate of ${blank(proper(t.staffName))}; ${blank(t.designation)} (Designation) of ${blank(proper(t.schoolName))} (Name of the Institution), for the purpose of Pension / Gratuity / Family Pension.</p>
@@ -892,7 +912,7 @@ function docPAYC(t,c){
     <p><strong>Recoveries of Loans and Advances:</strong> Loan(s) / Advance(s) of Rs. ______________ was sanctioned for ______________, of which ______________ instalment(s) have been recovered up to ______________ @ Rs. ______________, and a further ______________ instalment(s) @ Rs. ______________ will be recovered up to the date of Superannuation, leaving a balance of Rs. ______________ outstanding on the date of Superannuation to be recovered from Gratuity.</p>
     <p><strong>Overdrawals of Pay and Allowances etc.:</strong> Shri / Smt. ______________________ had overdrawn an amount of Rs. ______________ on account of ______________, of which Rs. ______________ shall be recovered up to the date of Superannuation, leaving a balance of Rs. ______________ outstanding to be recovered from Gratuity.</p>
     <p>All outstanding dues, as on the date of Superannuation, shall be recovered from the amount of gratuity and relief on pension straightway by the Director of Pension, Provident Fund &amp; Group Insurance.</p>
-    <div class="sig-line" style="margin-top:14mm;">Signature of the Headmaster / Head of the Institution / Secretary / Administrator / Sub-Inspector (Circle) — Office Seal</div>
+    <div class="sig-line" style="margin-top:14mm;">Signature of the ${blank(upper(hoiSignatory(t)))} — Office Seal</div>
   `);
 }
 
@@ -908,7 +928,7 @@ function docFLP(t,c){
     <p>Please arrange and do the needful.</p>
     <p>With Thanks.</p>
     <p style="text-align:right;">Yours faithfully.</p>
-    <div class="sig-line">${blank(hoiSignatory(t))}</div>
+    <div class="sig-line">Signature of the ${blank(upper(hoiSignatory(t)))}</div>
     <p style="margin-top:8mm;"><strong>Enclosures [In Duplicate]:</strong></p>
     <ol class="items small">
       <li>Original and Copy of Service Book of the employee.</li>
@@ -919,8 +939,8 @@ function docFLP(t,c){
       <li>Various Nomination Forms filled up by the employee.</li>
       <li>Age proof and all academic certificates of the employee.</li>
       <li>Approval(s) of Appointment of the employee.</li>
-      <li>All I.P.F.(s) of ROPA - 1998, 2009, 2019 in Original with option and one set Xerox. [Including wrong all if any]</li>
-      <li>Declaration and Statement of HRA jointly drawn by the employee and spouse (if applicable) regarding non/employment of spouse and HRA.</li>
+      <li>All I.P.F.(s) of ROPA - 1998, 2009, 2019 in Original with option and one set Xerox.</li>
+      <li>Declaration and Statement of HRA jointly drawn by the employee and spouse (if applicable).</li>
       <li>Certificate regarding employment / non-employment of spouse and HRA.</li>
       <li>Pay Certificate (Part-C in format).</li>
       <li>No Liabilities Certificate (in format).</li>
@@ -945,21 +965,14 @@ function docFLCHO(t,c){
     <p>You are requested to take necessary arrangements in this regard at your earliest.</p>
     <p>With Thanks.</p>
     <p style="text-align:right;">Yours faithfully.</p>
-    <div class="sig-line">${blank(hoiSignatory(t))}</div>
-    <p style="margin-top:8mm;"><strong>Enclosures:</strong></p>
-    <ol class="items small">
-      <li>Online Report of Charge Hand Over and Take Over</li>
-      <li>Copy of M.C. Resolution / Administrator Order for Charge Hand Over and Take Over</li>
-      <li>Approval of incoming Teacher-In-Charge</li>
-      <li>Documents of Charge Hand Over and Take Over</li>
-    </ol>
+    <div class="sig-line">Signature of the ${blank(upper(hoiSignatory(t)))}</div>
   `);
 }
 
 function docAPPNOLIA(t,c){
   return pageWrap(`
     <p><strong>To</strong><br>The District Inspector of Schools (S.E.), Bankura.<br>Post &amp; District, Bankura.</p>
-    <p><strong>Through</strong><br>The ${blank(hoiSignatory(t))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
+    <p><strong>Through</strong><br>The ${blank(upper(hoiSignatory(t)))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
     <p><strong>Subject:</strong> Request for issuing of 'No Liability Certificate' for releasing pension, Gratuity and other admissible retirement benefits in favour of me.</p>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
     <p>Sir,</p>
@@ -973,14 +986,14 @@ function docAPPNOLIA(t,c){
     <div class="sig-line">${blank(proper(t.staffName))}<br>${blank(t.designation)} [Retired]<br>${blank(proper(t.schoolName))}</div>
     <p style="margin-top:6mm;"><strong>Enclosures:</strong></p>
     <ol class="items small"><li>Photo Copy of PPO.</li></ol>
-    <div class="sig-line" style="margin-top:14mm;">${blank(hoiSignatory(t))}</div>
+    <div class="sig-line" style="margin-top:14mm;">Signature of the ${blank(upper(hoiSignatory(t)))}</div>
   `);
 }
 
 function docFLNOLIACPC(t,c){
   return pageWrap(`
     <p><strong>To</strong><br>The Circle Project Co-ordinator<br>${blank(proper(t.cpcName))}</p>
-    <p><strong>Through</strong><br>The ${blank(hoiSignatory(t))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
+    <p><strong>Through</strong><br>The ${blank(upper(hoiSignatory(t)))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
     <p><strong>Subject:</strong> Request for issuance of 'No Liability Certificate' in favour of ${proper(t.staffName)}; Ex-${proper(t.designation)} for releasing pension in connection with the submission of U.C. on different grants sanctioned by SSM in favour of ${proper(t.schoolName)}; UDISE Code - ${blank(t.diseCode)}.</p>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
     <p>Sir / Madam,</p>
@@ -993,7 +1006,7 @@ function docFLNOLIACPC(t,c){
     <div class="sig-line">${blank(proper(t.staffName))}<br>${blank(t.designation)} [Retired]<br>${blank(proper(t.schoolName))}</div>
     <p style="margin-top:6mm;"><strong>Enclosures:</strong></p>
     <ol class="items small"><li>Photo Copy of PPO.</li></ol>
-    <div class="sig-line" style="margin-top:14mm;">${blank(hoiSignatory(t))}</div>
+    <div class="sig-line" style="margin-top:14mm;">Signature of the ${blank(upper(hoiSignatory(t)))}</div>
   `);
 }
 
@@ -1009,13 +1022,13 @@ function docFLNOLIA(t,c){
     <p>You are requested to take necessary arrangements in this regard at your earliest, by which ${hisHer(g)} Pension, Gratuity and other admissible retirement benefits may be released from the competent authority in due time.</p>
     <p>With Thanks.</p>
     <p style="text-align:right;">Yours faithfully.</p>
-    <div class="sig-line">${blank(hoiSignatory(t))}</div>
+    <div class="sig-line">Signature of the ${blank(upper(hoiSignatory(t)))}</div>
     <p style="margin-top:8mm;"><strong>Enclosures:</strong></p>
     <ol class="items small">
       <li>Photo Copy of PPO.</li>
       <li>Application of the Pensioner.</li>
       <li>Online No Liability Certificate.</li>
-      <li>Certificate issued by HOI / Administrator / President [M.C.] / Secretary [M.C.]</li>
+      <li>Certificate issued by HOI / Administrator / President [M.C.]</li>
       ${["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"].includes(t.designation)? `<li>NOC issued from the end of the concerned CPC</li><li>Charge Hand Over Copy</li>`:""}
     </ol>
   `);
@@ -1035,7 +1048,7 @@ function docNOLIACERT(t,c){
       <li>No Provisional Pension has been sanctioned to the employee.</li>
       <li>No Provisional Gratuity has been sanctioned to the employee.</li>
     </ol>
-    <div class="sig-line" style="margin-top:16mm;">${blank(hoiSignatory(t))}</div>
+    <div class="sig-line" style="margin-top:16mm;">Signature of the ${blank(upper(hoiSignatory(t)))}</div>
   `);
 }
 
@@ -1087,7 +1100,7 @@ function docCHO(t,c){
     <p style="margin-top:8mm;">Date: ______________ &nbsp;&nbsp;&nbsp;&nbsp; Place: ______________</p>
     <div class="sig-line">${blank(t.chargeHandOverToPost)} [w.e.f. ${fmt(eventDatePlus1)}]<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</div>
     <p style="margin-top:10mm;text-align:center;letter-spacing:3px;">C O U N T E R S I G N E D</p>
-    <div class="sig-line">${blank(hoiSignatory(t))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</div>
+    <div class="sig-line">Signature of the ${blank(upper(hoiSignatory(t)))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</div>
   `);
 }
 
@@ -1099,7 +1112,7 @@ function docCPC(t,c){
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
     <p><strong>Certified that -</strong></p>
     <p>${proper(t.staffName)}; Ex-${proper(t.designation)} [duly retired from his / her service due to superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} (a.n.)] has no liabilities in connection with the submission of Utilization Certificate on different grants sanctioned by SSM in favour of this school i.e. ${proper(t.schoolName)}, and for such grants after utilization no Utilization Certificate is pending for submission during his / her service period, i.e. till ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""}.</p>
-    <div class="sig-line" style="margin-top:16mm;">${blank(hoiSignatory(t))}</div>
+    <div class="sig-line" style="margin-top:16mm;">Signature of the ${blank(upper(hoiSignatory(t)))}</div>
   `);
 }
 
@@ -1110,6 +1123,27 @@ const DOC_RENDERERS = {
   FLNOLIACPC: docFLNOLIACPC, FLNOLIA: docFLNOLIA, NOLIACERT: docNOLIACERT,
   RESC: docRESC, CHO: docCHO, CPC: docCPC
 };
+
+const DOC_LIST = [
+  { id:"COVER",       name:"Cover Page",              sub:"Pension application case file label" },
+  { id:"SB",           name:"Service Book Certificate", sub:"Certificates [Service Book]" },
+  { id:"AB",           name:"Enclosure A & B",          sub:"Specimen signatures & photographs" },
+  { id:"E",            name:"Enclosure E",              sub:"Nomination / Family details" },
+  { id:"D",            name:"Enclosure D",              sub:"Death / Invalidity" },
+  { id:"HRAD",         name:"HRA Declaration",          sub:"Employment / Non-Employment & HRA of Spouse" },
+  { id:"HRAC",         name:"HRA Certificate",          sub:"Certificate regarding HRA of Spouse" },
+  { id:"NOLIA",        name:"No-Liability Certificate", sub:"Liability / No-Liability Certificate" },
+  { id:"PAYC",         name:"Pay Certificate",          sub:"Pay Certificate" },
+  { id:"FLP",          name:"Forwarding Letter (Pension)", sub:"To D.I. of Schools - Pension papers" },
+  { id:"FLCHO",        name:"Forwarding Letter (Charge Handover)", sub:"To D.I. of Schools - Charge Hand Over" },
+  { id:"APPNOLIA",     name:"Application for No-Liability", sub:"Request for No-Liability Certificate" },
+  { id:"FLNOLIACPC",   name:"Forwarding Letter (No-Liability, CPC)", sub:"To Circle Project Co-ordinator" },
+  { id:"FLNOLIA",      name:"Forwarding Letter (No-Liability)", sub:"To D.I. of Schools - No-Liability Certificate" },
+  { id:"NOLIACERT",    name:"No-Liability Certificate (TWIMC)", sub:"To Whom It May Concern" },
+  { id:"RESC",         name:"M.C. Resolution",          sub:"Resolution Adopted by M.C. / Administrator" },
+  { id:"CHO",          name:"Charge Hand Over / Take Over", sub:"Charge Hand Over" },
+  { id:"CPC",          name:"Certificate (TWIMC)",       sub:"To Whom It May Concern" }
+];
 
 /* =========================================================================
    STORAGE
@@ -1286,7 +1320,6 @@ function renderDocs(){
   <div class="doc-layout">
     <div class="doc-list">
       ${DOC_LIST.map(d=>`<button class="doc-btn ${activeDoc===d.id?'active':''}" data-doc="${d.id}">${d.name}<small>${d.sub}</small></button>`).join("")}
-      <button class="btn btn-primary" style="margin-top:10px;" id="btnPrintAll">Print All Documents</button>
     </div>
     <div class="doc-preview-wrap">
       <div class="preview-toolbar">
@@ -1300,13 +1333,6 @@ function wireDocButtons(){
   $$(".doc-btn").forEach(b=>b.addEventListener("click", ()=>{ activeDoc=b.dataset.doc; render(); }));
   const one = $("#btnPrintOne");
   if(one) one.addEventListener("click", ()=> window.print());
-  const all = $("#btnPrintAll");
-  if(all) all.addEventListener("click", ()=>{
-    const c = compute(current);
-    const area = $("#printArea");
-    area.innerHTML = DOC_LIST.map(d => DOC_RENDERERS[d.id](current,c)).join("");
-    setTimeout(()=>{ window.print(); render(); }, 50);
-  });
 }
 
 /* =========================================================================
