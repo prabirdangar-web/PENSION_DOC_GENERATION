@@ -339,12 +339,12 @@ function fmtD(d, pattern){
 function fmtDate(s, pattern){ return fmtD(toDate(s), pattern); }
 function minusDays(dateStr, n){ const d = toDate(dateStr); return d ? addDays(d, -n) : null; }
 function addDays(d, n){ const r=new Date(d.getTime()); r.setDate(r.getDate()+n); return r; }
-function excelDateK0(year, k){ return new Date(year, k, 0); } // last day of 1-indexed month k
+function excelDateK0(year, k){ return new Date(year, k, 0); }
 function calcSuperannuation(dobStr){
   const dob = toDate(dobStr);
   if(!dob) return null;
   const y = dob.getFullYear()+60;
-  const em = dob.getMonth()+1; // 1-indexed month
+  const em = dob.getMonth()+1;
   if(dob.getDate()===1) return excelDateK0(y, em-1);
   return excelDateK0(y, em);
 }
@@ -451,7 +451,7 @@ function compute(t){
 }
 
 /* =========================================================================
-   DOCUMENT TEMPLATES  (translated from the workbook's letter/certificate sheets)
+   DOCUMENT TEMPLATES
    ========================================================================= */
 const DOC_LIST = [
   {id:"COVER", name:"Cover Page", sub:"Application summary sheet"},
@@ -550,44 +550,56 @@ function docSB(t,c){
 }
 
 function docAB(t,c){
+  const renderSigSet = (setNumber) => `
+    <table style="width:100%; border:none; margin:15px 0 25px 0;">
+      <tr style="border:none;">
+        <td style="width:60%; border:none; padding:5px 0; text-align:left; vertical-align:middle; line-height: 2;">
+          <div><strong>1st Signature:</strong> _____________________________________</div>
+          <div><strong>2nd Signature:</strong> _____________________________________</div>
+          <div><strong>3rd Signature:</strong> _____________________________________</div>
+        </td>
+        <td style="width:40%; border:none; padding:5px 0; text-align:right; vertical-align:bottom;">
+          <div style="display:inline-block; border-top:1px solid #111; width:65mm; text-align:center; padding-top:4px; font-weight:bold; font-size:10.5pt;">
+            Signature Attested
+          </div>
+        </td>
+      </tr>
+    </table>
+    ${setNumber < 3 ? '<hr style="border:none; border-top:1px dashed #ccc; margin:15px 0;">' : ''}
+  `;
+
   return pageWrap(`
-    <div style="text-align:center; font-family:'Times New Roman', serif; line-height:1.6;">
-      <h2 style="font-size:15pt; margin:0; font-weight:bold;">ENCLOSURE&mdash;&lsquo;A&rsquo;</h2>
-      <h3 style="font-size:12pt; margin:2px 0 10px; font-weight:bold;">(To be supplied by the Pensioner / Family Pensioner)</h3>
-      <p style="text-align:justify; margin:0 0 15px 0; font-size:11.5pt;">Three Specimen Signatures of Pensioner to be given below, duly attested by Gr. &lsquo;A&rsquo; / erstwhile Gazetted Officer. (For use at the Directorate of Pension, Provident Fund and Group Insurance).</p>
-      
-      <div style="text-align:left; font-size:13pt; font-weight:bold; margin:20px 0 30px 0;">
-        Name of the Pensioner: <span style="text-decoration:underline;">${upper(blank(t.staffName))}</span>
-        <div style="font-size:10pt; font-weight:normal; margin-top:2px;">[In Block Letters]</div>
+    <div style="font-family:'Times New Roman', serif; line-height:1.5;">
+      <div style="text-align:center;">
+        <h2 style="font-size:14pt; margin:0 0 2px 0; font-weight:bold;">ENCLOSURE&mdash;&lsquo;A&rsquo;</h2>
+        <h3 style="font-size:11pt; margin:0 0 12px 0; font-weight:bold;">(To be supplied by the Pensioner / Family Pensioner)</h3>
+        <p style="text-align:justify; margin:0 0 15px 0; font-size:11pt;">
+          Three Specimen Signatures of Pensioner to be given below, duly attested by Gr. &lsquo;A&rsquo; / erstwhile Gazetted Officer. (For use at the Directorate of Pension, Provident Fund and Group Insurance).
+        </p>
+        
+        <div style="text-align:left; font-size:12.5pt; font-weight:bold; margin:15px 0 20px 0;">
+          Name of the Pensioner: <span style="text-decoration:underline;">${upper(blank(t.staffName))}</span>
+          <div style="font-size:9.5pt; font-weight:normal; margin-top:2px; color:#333;">[In Block Letters]</div>
+        </div>
       </div>
 
-      <!-- Signature Blocks Row Style Matching Sheet Layout -->
-      <table style="width:100%; border:none; margin:25px 0;">
-        <tr style="border:none;">
-          <td style="width:60%; border:none; padding:15px 0; text-align:left; vertical-align:middle;">
-            <div style="margin-bottom:20px;"><strong>1st Signature:</strong> _____________________________________</div>
-            <div style="margin-bottom:20px;"><strong>2nd Signature:</strong> _____________________________________</div>
-            <div><strong>3rd Signature:</strong> _____________________________________</div>
-          </td>
-          <td style="width:40%; border:none; padding:15px 0; text-align:right; vertical-align:bottom;">
-            <div style="display:inline-block; border-top:1px solid #111; width:70mm; text-align:center; padding-top:5px; font-weight:bold; font-size:11pt;">
-              Signature Attested
-            </div>
-          </td>
-        </tr>
-      </table>
+      ${renderSigSet(1)}
+      ${renderSigSet(2)}
+      ${renderSigSet(3)}
 
-      <hr style="border:none; border-top:1px dashed #444; margin:30px 0;">
+      <hr style="border:none; border-top:2px solid #111; margin:25px 0;">
 
-      <h2 style="font-size:15pt; margin:0; font-weight:bold;">ENCLOSURE&mdash;&lsquo;B&rsquo;</h2>
-      <h3 style="font-size:12pt; margin:2px 0 4px; font-weight:bold;">(To be supplied by the Pensioner / Family Pensioner)</h3>
-      <p style="text-align:justify; margin:0 0 8px 0; font-size:11.5pt;">Three Copies of Photographs (Single/Joint) to be stapled below. The photo should have the name(s) of Pensioner(s) and attested on the front side by by Gr. 'A' officer /Headmaster/Headmistress of the institution.</p>
-      <h4 style="font-size:11pt; margin:0 0 20px 0; font-weight:bold;">(To be furnished by the Pensioner or by the Family Pensioner as the case may be)</h4>
-      
-      <div style="display:flex; justify-content:space-between; margin-top:25px; width:100%;">
-        <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:10pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
-        <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:10pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
-        <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:10pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
+      <div style="text-align:center;">
+        <h2 style="font-size:14pt; margin:0 0 2px 0; font-weight:bold;">ENCLOSURE&mdash;&lsquo;B&rsquo;</h2>
+        <h3 style="font-size:11pt; margin:0 0 4px 0; font-weight:bold;">(To be supplied by the Pensioner / Family Pensioner)</h3>
+        <p style="text-align:justify; margin:0 0 6px 0; font-size:11pt;">Three Copies of Photographs (Single/Joint) to be stapled below. The photo should have the name(s) of Pensioner(s) and attested on the front side by Gr. 'A' officer /Headmaster/Headmistress of the institution.</p>
+        <h4 style="font-size:10.5pt; margin:0 0 15px 0; font-weight:bold;">(To be furnished by the Pensioner or by the Family Pensioner as the case may be)</h4>
+        
+        <div style="display:flex; justify-content:space-between; margin-top:20px; width:100%;">
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
+        </div>
       </div>
     </div>
   `);
@@ -712,7 +724,6 @@ function docD(t,c){
   for(let i=0; i<rowCount; i++){
     const alt = alternates[i];
     const sharePct = alt ? (anyShareEntered ? (Number(alt.share)||0) : equalShare) : 0;
-    const altAge = alt ? ageString(alt.dob, c.dor) : "";
     let row = "<tr>";
     if(i===0){
       row += `<td rowspan="${rowCount}" style="width:22%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
@@ -946,7 +957,6 @@ function docFLCHO(t,c){
 }
 
 function docAPPNOLIA(t,c){
-  const g=t.gender;
   return pageWrap(`
     <p><strong>To</strong><br>The District Inspector of Schools (S.E.), Bankura.<br>Post &amp; District, Bankura.</p>
     <p><strong>Through</strong><br>The ${blank(hoiSignatory(t))}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
@@ -1052,7 +1062,7 @@ function docRESC(t,c){
         <tr><td>3.</td><td></td><td></td><td></td><td></td></tr></table>
       </li>
     </ol>
-    <p>After approval of the above matters, it is suggested / advised / ordered / decided unanimously that the incoming Teacher-In-Charge of this school will perform the following activities on or after ${fmtD(c.dorPlus1,"dd-mm-yyyy")}:</p>
+    <p>After approval of the above matters, it is suggested / advised / ordered / decided unanimously that the incoming Teacher-In-Write of this school will perform the following activities on or after ${fmtD(c.dorPlus1,"dd-mm-yyyy")}:</p>
     <ol class="items">
       <li>To take necessary arrangement for constitution of Staff Council, Academic Council &amp; Finance Sub-Committee with immediate effect as per Rule.</li>
       <li>To take necessary arrangement for changing the Operator of all the aforesaid bank accounts, by which the same will be operated jointly by the Teacher-In-Charge, ${blank(proper(t.chargeHandOverToName))}, instead of ${proper(t.staffName)}; ${proper(t.designation)}, and the Administrator / President as earlier.</li>
@@ -1102,7 +1112,7 @@ const DOC_RENDERERS = {
 };
 
 /* =========================================================================
-   STORAGE  (persistent artifact storage - private per user)
+   STORAGE
    ========================================================================= */
 const INDEX_KEY = "pensioners:index";
 async function loadIndex(){
@@ -1144,7 +1154,6 @@ const $$ = sel => Array.from(document.querySelectorAll(sel));
 
 function newId(){ return "p_"+Date.now()+"_"+Math.random().toString(36).slice(2,8); }
 
-/* ---------- Sidebar record list ---------- */
 async function refreshRecordList(){
   const ids = await loadIndex();
   const recs = [];
@@ -1180,7 +1189,6 @@ async function selectRecord(id){
   render();
 }
 
-/* ---------- Top-level render ---------- */
 function render(){
   $("#topTitle").textContent = current.id ? (proper(current.staffName)||"(unnamed)") + " — " + (current.designation||"") : "New Pensioner Record";
   $("#btnDuplicate").style.display = current.id ? "inline-block" : "none";
@@ -1199,7 +1207,6 @@ function render(){
   updateSaveStatus();
 }
 
-/* ---------- FORM TAB ---------- */
 function renderForm(){
   return SECTIONS.map(sec => `
     <fieldset>
@@ -1249,7 +1256,6 @@ function updateSaveStatus(){
   el.style.color = dirty ? "#a4322a" : "#2e7d4f";
 }
 
-/* ---------- SUMMARY TAB ---------- */
 function renderSummary(){
   const c = compute(current);
   const cards = [
@@ -1272,7 +1278,6 @@ function renderSummary(){
   <p class="hint" style="margin-top:14px;">These figures are calculated automatically from the data you entered, using the same formulas as the original workbook (ROPA-19 gratuity &amp; pension rules). Values update live as you edit the Data tab.</p>`;
 }
 
-/* ---------- DOCS TAB ---------- */
 function renderDocs(){
   const c = compute(current);
   const activeRenderer = DOC_RENDERERS[activeDoc];
@@ -1366,7 +1371,6 @@ $("#btnDelete").addEventListener("click", async ()=>{
 });
 
 $("#searchBox").addEventListener("input", renderRecordList);
-
 $("#btnToggleSidebar").addEventListener("click", ()=>{
   document.querySelector(".sidebar").classList.toggle("open");
 });
