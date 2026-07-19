@@ -63,20 +63,22 @@
   .sum-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
   .sum-card .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
   .sum-card .val{font-size:18px;font-weight:700;color:var(--navy);margin-top:3px;}
-  /* ---------- Documents list + preview ---------- */
-  .doc-layout{display:flex;gap:18px;align-items:flex-start;}
-  .doc-list{width:260px;flex:0 0 260px;display:flex;flex-direction:column;gap:6px;position:sticky;top:70px;}
-  .doc-btn{text-align:left;background:#fff;border:1px solid var(--line);border-radius:7px;padding:9px 11px;font-size:12.5px;cursor:pointer;font-weight:600;color:var(--navy);}
+  
+  /* ---------- Documents list + preview Layout ---------- */
+  .doc-layout{display:flex;gap:18px;align-items:flex-start;width:100%;}
+  .doc-list{width:260px;flex:0 0 260px;display:flex;flex-direction:column;gap:6px;position:sticky;top:20px;}
+  .doc-btn{text-align:left;background:#fff;border:1px solid var(--line);border-radius:7px;padding:9px 11px;font-size:12.5px;cursor:pointer;font-weight:600;color:var(--navy);width:100%;}
   .doc-btn small{display:block;font-weight:400;color:var(--muted);font-size:10.5px;margin-top:2px;}
   .doc-btn.active{border-color:var(--gold);background:#fff7ec;}
-  .doc-preview-wrap{flex:1;min-width:0;}
-  .preview-toolbar{display:flex;gap:8px;margin-bottom:10px;}
-  
+  .doc-preview-wrap{flex:1;min-width: 0;overflow-x:auto;background:#dee2e6;padding:20px;border-radius:8px;border:1px solid var(--line);}
+  .preview-toolbar{display:flex;gap:8px;margin-bottom:15px;}
+  .print-area { display: block !important; width: 100%; }
+
   /* ---------- Printable page (A4 Strict Layout Controls) ---------- */
   @page { size: portrait; margin: 15mm; }
   @page landscape-page-setting { size: landscape; margin: 10mm; }
 
-  .page{background:var(--paper);width:210mm;min-height:296mm;margin:0 auto 24px;padding:16mm 16mm 14mm;box-shadow:0 1px 8px rgba(0,0,0,.18);font-family:"Times New Roman",Georgia,serif;font-size:11.5pt;line-height:1.45;color:#111;position:relative;page-break-after:always;}
+  .page{background:var(--paper);width:210mm;min-height:296mm;margin:0 auto;padding:16mm 16mm 14mm;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-family:"Times New Roman",Georgia,serif;font-size:11.5pt;line-height:1.45;color:#111;position:relative;}
   
   /* Landscape Document Overrides for Enclosure D & E */
   .page.landscape-layout {
@@ -96,7 +98,7 @@
     background: #fffdf9;
   }
 
-  .page h2.doc-title{text-align:center;font-size:14pt;font-weight:bold;margin:2mm 0 4mm;letter-spacing:.4px;}
+  .page h2.doc-title{text-align:center;font-size:14pt;font-weight:bold;margin:2mm 0 4mm;letter-spacing:.4px;text-transform:uppercase;}
   .page h3.doc-sub{text-align:center;font-size:11pt;margin:-3mm 0 5mm;font-weight:bold;}
   .page .ref-line{font-size:10.5pt;margin-bottom:4mm;}
   .page p{margin:0 0 3mm;text-align:justify;}
@@ -118,8 +120,8 @@
   .page .sig-line{margin-top:14mm;border-top:1px solid #222;width:70mm;padding-top:2mm;font-size:10.5pt;}
   .page .field-empty{color:#b33;font-style:italic;}
   
-  .pension-table th { font-size: 9pt; line-height: 1.2; padding: 4px 2px; text-align: center; }
-  .pension-table td { font-size: 9.5pt; padding: 5px 4px; }
+  .pension-table th { font-size: 8.5pt; line-height: 1.2; padding: 4px 2px; text-align: center; font-weight: bold; }
+  .pension-table td { font-size: 9pt; padding: 5px 4px; }
   
   /* ---------- Mobile friendliness ---------- */
   .sidebar-toggle{display:none;}
@@ -137,11 +139,20 @@
     .page.landscape-layout { width:100% !important; min-height:auto !important; }
   }
 
-  /* ---------- Standardized Blueprint Print Engine Override ---------- */
+  /* ---------- Standardized Blueprint Cross-Browser Print Engine ---------- */
   @media print{
-    .sidebar, .topbar, .tabs, .doc-list, .preview-toolbar { display: none !important; }
-    body, .app, .main, .content, .doc-layout, .doc-preview-wrap, .print-area { 
+    html, body {
+      height: auto !important;
+      overflow: visible !important;
+      background: #fff !important;
+    }
+    .sidebar, .topbar, .tabs, .doc-list, .preview-toolbar { 
+      display: none !important; 
+    }
+    .app, .main, .content, .doc-layout, .doc-preview-wrap, .print-area { 
       display: block !important; 
+      position: static !important;
+      overflow: visible !important;
       width: 100% !important; 
       margin: 0 !important; 
       padding: 0 !important; 
@@ -149,9 +160,22 @@
       background: transparent !important; 
       box-shadow: none !important; 
     }
-    .page { box-shadow: none; margin: 0 auto !important; page-break-after: always; visibility: visible !important; }
-    .page * { visibility: visible !important; }
-    .page:last-child { page-break-after: auto; }
+    .page { 
+      box-shadow: none !important; 
+      margin: 0 auto !important; 
+      page-break-after: always !important; 
+      visibility: visible !important; 
+      display: block !important;
+    }
+    .page.landscape-layout {
+      page: landscape-page-setting !important;
+    }
+    .page * { 
+      visibility: visible !important; 
+    }
+    .page:last-child { 
+      page-break-after: auto !important; 
+    }
   }
 </style>
 </head>
@@ -497,15 +521,14 @@ function compute(t){
 /* =========================================================================
    DOCUMENT TEMPLATES
    ========================================================================= */
+function pageWrap(content){
+  return `<div class="page">${content}</div>`;
+}
 function letterhead(t){
-  const diseLine = t.diseCode ? ` &nbsp;|&nbsp; DISE/UDISE Code: ${t.diseCode}` : "";
   return `<div class="letterhead">
     <div class="sc">${blank(upper(t.schoolName))}</div>
-    <div class="ad">${blank(proper(t.schoolAddress))}${diseLine}</div>
+    <div class="ad">${blank(proper(t.schoolAddress))}</div>
   </div>`;
-}
-function pageWrap(innerHtml){
-  return `<div class="page">${innerHtml}</div>`;
 }
 function docCOVER(t,c){
   return `<div class="page cover-poster-layout">
@@ -542,13 +565,13 @@ function docSB(t,c){
   let prevSchoolClause = "";
   if(doj1 && doj3 && doj1!==doj3){
     const end1 = minusDays(doj2 || doj3, 1);
-    prevSchoolClause += ` As per ${hisHer(g)} service record it is seen that previously ${heshe(g)} served to the post of ${blank(t.prevSchoolPost1)} for the period from ${fmtDate(doj1,"dd-mm-yyyy")} To ${fmtD(end1,"dd-mm-yyyy")} in ${blank(proper(t.prevSchool1))} satisfactorily and without any break.`;
+    prevSchoolClause += ` As per ${hisHer(g)} service record it is seen that previously ${heshe(g)} served to the post of ${blank(t.prevSchoolPost1)} for the period from ${fmtDate(doj1,"dd-mm-yyyy")} To ${fmtD(end1,"dd-mm-yyyy")} in ${blank(proper(t.prevSchool1))} satisfactorily and without any break.[cite: 2]`
     if(doj2 && doj3 && doj2!==doj3){
       const end2 = minusDays(doj3, 1);
-      prevSchoolClause += ` and to the post of ${blank(t.prevSchoolPost2)} in ${blank(proper(t.prevSchool2))} for the period from ${fmtDate(doj2,"dd-mm-yyyy")} To ${fmtD(end2,"dd-mm-yyyy")} satisfactorily and without any break.`;
+      prevSchoolClause += ` and to the post of ${blank(t.prevSchoolPost2)} in ${blank(proper(t.prevSchool2))} for the period from ${fmtDate(doj2,"dd-mm-yyyy")} To ${fmtD(end2,"dd-mm-yyyy")} satisfactorily and without any break.[cite: 2]`
     }
   }
-  const cert4a = `Certified that ${proper(t.schoolName)}; ${proper(t.schoolAddress)} is recognized school w.e.f. ${blank(fmtDate(t.schoolRecognisedDate,"dd-mm-yyyy"))} by the WBBSE and a Govt. Sponsored School and not a D.A. getting one where ${proper(t.staffName)} (to be retired ${proper(t.designation)} on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"[DOB required]"} [a.n.]) has been serving against a permanent post of ${proper(t.designation)} w.e.f. ${blank(fmtDate(t.dojThisSchool,"dd-mm-yyyy"))} to till date satisfactorily and without any break.${prevSchoolClause}`;
+  const cert4a = `Certified that ${proper(t.schoolName)}; ${proper(t.schoolAddress)} is recognized school w.e.f. ${blank(fmtDate(t.schoolRecognisedDate,"dd-mm-yyyy"))} by the WBBSE and a Govt. Sponsored School and not a D.A. getting one where ${proper(t.staffName)} (to be retired ${proper(t.designation)} on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"[DOB required]"} [a.n.]) has been serving against a permanent post of ${proper(t.designation)} w.e.f. ${blank(fmtDate(t.dojThisSchool,"dd-mm-yyyy"))} to till date satisfactorily and without any break.${prevSchoolClause}[cite: 2, 3]`
   const cert4b = `Certified that ${blank(proper(t.spouseName))}; ${wifeHusband(g)} of ${proper(t.staffName)} is serving / served to the post of ${blank(proper(t.spouseDesignation))} in ${blank(proper(t.spouseOffice))} under the ${blank(proper(t.spouseDept))} since ${blank(fmtDate(t.spouseDoj,"dd-mm-yyyy"))} and to be retired on ${fmtD(c.spouseDor,"dd-mm-yyyy")}. House Rent drawn by both of them is as per GA rules and within the prescribed limit throughout their service`
     + (Number(t.hraOverdrawn)>0 ? ` — provided that excess HRA and/or salary drawn jointly, or by spouse or ${himHer(g)}, amounting Rs.${inr(t.hraOverdrawn)} has been refunded via TR-7 ${safe(t.challanNoDate)}.` : ".");
   const cert14 = t.spouseStatus==="IN SERVICE" ? cert4b :
@@ -562,12 +585,12 @@ function docSB(t,c){
     <p><strong>Certified that -</strong></p>
     <ol class="items">
       <li>${cert4a}</li>
-      <li>The service and leave statement of the incumbent has been properly verified since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date from relevant school records and found correct.</li>
+      <li>The service and leave statement of the incumbent has been properly verified since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date from relevant school records and found correct.[cite: 3]</li>
       <li>The service rendered by ${himHer(g)} has been satisfactory and ${heshe(g)} was present on both the closing and reopening date of each long vacation throughout ${hisHer(g)} period of service since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date without any break of service.</li>
-      <li>The incumbent has no liabilities with the school or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F.</li>
-      <li>There is no court case or any litigation against his / her service.</li>
-      <li>${heShe(g)} enjoyed ${blank(t.medicalLeave)} days Medical Leave with full average pay, ${blank(t.halfPayLeave)} days Half Pay Leave, ${blank(t.extraOrdinaryLeave)} days Extra Ordinary Leave and ${blank(t.specialLeave)} days Special Leave during tenure i.e. ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date of ${hisHer(g)} service period, and other leave if any, all leaves have been approved by the M.C. / Competent Authority.</li>
-      <li>${heShe(g)} will retire on attaining the age of superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"[DOB required]"} and ${hisHer(g)} basic pay as per ROPA-19 will be Rs. ${inr(t.lastBasicPay)} on the date of superannuation retirement ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""} (a.n.).</li>
+      <li>The incumbent has no liabilities with the school or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F.[cite: 3]</li>
+      <li>There is no court case or any litigation against his / her service.[cite: 3]</li>
+      <li>He/She enjoyed ${blank(t.medicalLeave)} days Medical Leave with full average pay, ${blank(t.halfPayLeave)} days Half Pay Leave, ${blank(t.extraOrdinaryLeave)} days Extra Ordinary Leave and ${blank(t.specialLeave)} days Special Leave during tenure i.e. ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date of ${hisHer(g)} service period, and other leave if any, all leaves have been approved by the M.C. / Competent Authority.</li>
+      <li>${heShe(g)} will retire on attaining the age of superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"[DOB required]"} and ${hisHer(g)} basic pay as per ROPA-19 will be Rs. ${inr(t.lastBasicPay)} on the date of superannuation retirement ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""} (a.n.).[cite: 3]</li>
       <li>It is recommended that Pension, Gratuity and other retirement benefits should be admissible to ${himHer(g)} as per ROPA-19 rules.</li>
     </ol>
     <p><strong>Certificate regarding Employment / Non-Employment of Spouse:</strong></p>
@@ -603,15 +626,12 @@ function docAB(t,c){
         <h2 style="font-size:14pt; margin:0 0 2px 0; font-weight:bold;">ENCLOSURE&mdash;&lsquo;A&rsquo;</h2>
         <h3 style="font-size:11pt; margin:0 0 12px 0; font-weight:bold;">(To be supplied by the Pensioner / Family Pensioner)</h3>
         <p style="text-align:justify; margin:0 0 15px 0; font-size:11pt;">
-          Three Specimen Signatures of Pensioner to be given below, duly attested by Gr. &lsquo;A&rsquo; / erstwhile Gazetted Officer. (For use at the Directorate of Pension, Provident Fund and Group Insurance).
+          Three Specimen Signatures of Pensioner to be given below, duly attested by Gr. &lsquo;A&rsquo; / erstwhile Gazetted Officer. (For use at the Directorate of Pension, Provident Fund and Group Insurance).[cite: 2]
         </p>
         
         <div style="text-align:left; font-size:12.5pt; font-weight:bold; margin:15px 0 20px 0;">
           Name of the Pensioner: <span style="text-decoration:underline;">${upper(blank(t.staffName))}</span>
           <div style="font-size:9.5pt; font-weight:normal; margin-top:2px; color:#333;">[In Block Letters]</div>
-        </div>
-        <div style="text-align:left; font-size:10.5pt; margin:0 0 6px 0;">
-          Submission &nbsp; Date: ____________________ &nbsp;&nbsp;&nbsp; Place: ____________________ &nbsp;&nbsp;&nbsp; Time: ____________________
         </div>
       </div>
 
@@ -624,13 +644,13 @@ function docAB(t,c){
       <div style="text-align:center;">
         <h2 style="font-size:14pt; margin:0 0 2px 0; font-weight:bold;">ENCLOSURE&mdash;&lsquo;B&rsquo;</h2>
         <h3 style="font-size:11pt; margin:0 0 4px 0; font-weight:bold;">(To be supplied by the Pensioner / Family Pensioner)</h3>
-        <p style="text-align:justify; margin:0 0 6px 0; font-size:11pt;">Three Copies of Photographs (Single/Joint) to be stapled below. The photo should have the name(s) of Pensioner(s) and attested on the front side by Gr. 'A' officer /Headmaster/Headmistress of the institution.</p>
+        <p style="text-align:justify; margin:0 0 6px 0; font-size:11pt;">Three Copies of Photographs (Single/Joint) to be stapled below. The photo should have the name(s) of Pensioner(s) and attested on the front side by Gr. 'A' officer /Headmaster/Headmistress of the institution.[cite: 2]</p>
         <h4 style="font-size:10.5pt; margin:0 0 15px 0; font-weight:bold;">(To be furnished by the Pensioner or by the Family Pensioner as the case may be)</h4>
         
         <div style="display:flex; justify-content:space-between; margin-top:20px; width:100%;">
-          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
-          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
-          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">Paste Photograph Here<br>(Attested on Front)</div>
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">PHOTO</div>
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">PHOTO</div>
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">PHOTO</div>
         </div>
       </div>
     </div>
@@ -654,42 +674,39 @@ function docE(t,c){
     
     let row = "<tr>";
     if(i===0){
-      row += `<td rowspan="${rowCount}" style="width:18%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:16%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
       row += `<td rowspan="${rowCount}" style="width:8%;" class="center">${blank(proper(t.spouseRelation))}</td>`;
-      row += `<td rowspan="${rowCount}" style="width:9%;" class="center">${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}</td>`;
-      row += `<td rowspan="${rowCount}" style="width:13%;">If primary nominee is minor, name/address of person who may receive arrear during minority</td>`;
+      row += `<td rowspan="${rowCount}" style="width:8%;" class="center">${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}</td>`;
+      row += `<td rowspan="${rowCount}" style="width:12%;"></td>`;
     }
     
     let altNameCell = "";
     if (alt) {
-      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)}${isMinor ? ` AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}` : ""}</span>`;
+      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)} AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}</span>`;
     }
     
-    row += `<td style="width:16%;">${altNameCell}</td>`;
-    row += `<td style="width:7%;" class="center">${alt ? blank(proper(alt.rel)) : ""}</td>`;
+    row += `<td style="width:18%;">${altNameCell}</td>`;
+    row += `<td style="width:8%;" class="center">${alt ? blank(proper(alt.rel)) : ""}</td>`;
     row += `<td style="width:8%;" class="center">${alt ? (isMinor ? "NA" : blank(fmtDate(alt.dob,"dd-mm-yyyy"))) : ""}</td>`;
-    row += `<td style="width:12%;">${alt && isMinor ? "Minor - Guardian details required" : ""}</td>`;
+    row += `<td style="width:12%;">${alt && isMinor ? "Guardian details required" : ""}</td>`;
     if(i===0){
-      row += `<td rowspan="${rowCount}" style="width:9%;" class="center">Death / Invalidity</td>`;
+      row += `<td rowspan="${rowCount}" style="width:10%;" class="center">Death / Invalidity</td>`;
     }
-    row += `<td style="width:13%;">${alt ? "Son or Daughter and DOB:____________________" : ""}</td>`;
     row += "</tr>";
     rows.push(row);
   }
 
   return `<div class="page landscape-layout">
-    <div style="font-family:'Times New Roman', Georgia, serif; font-size:11.3pt; line-height:1.4;">
-      <div style="text-align:right; font-weight:bold; font-size:12pt; margin-bottom:5px;">Enclosure &mdash; &lsquo;E&rsquo;</div>
-      <h2 class="doc-title" style="margin: 0 0 2px 0;">Nomination for Payment of Life Time Arrear of Pension</h2>
-      <h3 class="doc-sub" style="margin: 0 0 10px 0; font-weight:normal;">(To be furnished by the Employee)</h3>
+    <div style="font-family:'Times New Roman', Georgia, serif; font-size:10.5pt; line-height:1.4;">
+      <div style="text-align:right; font-weight:bold; font-size:11pt; margin-bottom:5px;">ENCLOSURE - 'E'</div>
+      <h2 class="doc-title" style="margin: 0 0 2px 0; font-size:13pt;">NOMINATION FOR PAYMENT OF LIFE TIME ARREAR OF PENSION.[cite: 1]</h2>
+      <h3 class="doc-sub" style="margin: 0 0 10px 0; font-weight:normal; font-size:10.5pt;">(To be furnished by the Employee)[cite: 1]</h3>
       
-      <p style="margin-bottom:4px;">Pension disbursing Authority / Head of Office</p>
-      <p style="margin-bottom:4px;">Name of the Bank/Treasury/Accountant General, West Bengal: <strong class="blank" style="min-width:200px;">${upper(blank(t.treasury))} Treasury</strong> &nbsp;&nbsp;&nbsp; Bank: <strong class="blank" style="min-width:140px;">${upper(blank(t.spouseBankName))}</strong></p>
-      <p style="margin-bottom:12px;">Place: ____________________ &nbsp;&nbsp;&nbsp; Branch: <strong class="blank" style="min-width:140px;">${upper(blank(t.spouseBranchName))}</strong> &nbsp;&nbsp;&nbsp; A/c. No: <strong class="blank" style="min-width:140px;">${blank(t.spouseAccountNo)}</strong></p>
+      <p style="margin-bottom:4px;">Pension Disbursing Authority / Head of Office[cite: 1]</p>
+      <p style="margin-bottom:4px;">Name of Bank / Treasury / Accountant General, West Bengal[cite: 1]</p>
+      <p style="margin-bottom:12px;">(Place) ___________________________[cite: 1]</p>
       
-      <p style="margin-bottom:12px;">I <strong class="blank" style="min-width:350px;">${upper(blank(t.staffName))}</strong> hereby nominate the person named below <br>
-      <span style="font-size:10pt; font-style:italic;">(Name of the Pensioner in capital letters)</span><br>
-      under rule 5 of the Payment of Arrear of Pension (Nomination) Rules, 1986.</p>
+      <p style="margin-bottom:12px;">I <strong class="blank" style="min-width:350px;">${upper(blank(t.staffName))}</strong> (Name of the pensioner in Capital letters) hereby nominate the person named below under rule 5 of the Payment of Arrear of Pension (Nomination) Rules, 1986.[cite: 1]</p>
       
       <table class="pension-table" style="width:100%; margin-bottom:15px;">
         <thead>
@@ -697,16 +714,15 @@ function docE(t,c){
             <th>Name and address of nominees</th>
             <th>Relationship with pensioner</th>
             <th>Date of Birth</th>
-            <th>If nominee is minor, name and address of persons who may receive the said pension during the nominee's minority</th>
+            <th>If nominee is minor name and address of person who may receive the said pension during the nominee's minority</th>
             <th>Name and address of other nominee in case the nominee under Col. (1) predeceases the pensioner</th>
             <th>Relationship with pensioner</th>
-            <th>Date of Birth if the other nominee is minor</th>
+            <th>Date of Birth If the other nominee is minor</th>
             <th>Name and address of person who may receive the pension during the other nominee's minority</th>
-            <th>Contingency on happening of which nomination shall become invalid</th>
-            <th>Relationship of Nominee (Son / Daughter) &amp; Date of Birth</th>
+            <th>Contingency of happening of which nomination shall become invalid</th>
           </tr>
           <tr style="font-size:8.5pt;" class="center">
-            <td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td><td>(7)</td><td>(8)</td><td>(9)</td><td>(10)</td>
+            <td>(1)[cite: 1]</td><td>(2)[cite: 1]</td><td>(3)[cite: 1]</td><td>(4)[cite: 1]</td><td>(5)[cite: 1]</td><td>(6)[cite: 1]</td><td>(7)[cite: 1]</td><td>(8)[cite: 1]</td><td>(9)[cite: 1]</td>
           </tr>
         </thead>
         <tbody>
@@ -716,17 +732,35 @@ function docE(t,c){
       
       <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:flex-start;">
         <div style="text-align:left; width:50%;">
-          <p style="margin-bottom:20px;">Place : ____________________</p>
-          <p style="margin-bottom:4px;">Witness : Signature, Name &amp; Address :</p>
-          <div style="border-bottom:1px solid #333; height:10mm; width:75mm; margin-bottom:8px;">1.</div>
-          <div style="border-bottom:1px solid #333; height:10mm; width:75mm; margin-bottom:20px;">2.</div>
-          <p style="font-weight:bold; margin-top:15px;">Signature of the Pension Disbursing<br>Authority/Head of Office</p>
+          <p style="margin-bottom:4px;">Place: ___________________________[cite: 1]</p>
+          <p style="margin-bottom:15px;">Date: ___________________________[cite: 1]</p>
+          <p style="margin-bottom:4px;">Witness: Signature, Name &amp; Address:[cite: 1]</p>
+          <div style="border-bottom:1px solid #333; height:8mm; width:75mm; margin-bottom:8px;">1.</div>
+          <div style="border-bottom:1px solid #333; height:8mm; width:75mm; margin-bottom:20px;">2.</div>
+          <p style="font-weight:bold; margin-top:10px;">Signature of the Pension Disbursing Authority / Head of Office[cite: 1]</p>
         </div>
         
         <div style="text-align:right; width:45%; display:flex; flex-direction:column; align-items:flex-end;">
-          <p style="margin-bottom:35px;">Date : ____________________</p>
-          <div style="border-top:1px solid #111; width:75mm; text-align:center; padding-top:4px; margin-top:40px;">
-            <strong>Signature (or thumb impression of<br>illiterate) and name of pensioner<br>and address</strong>
+          <div style="border-top:1px solid #111; width:75mm; text-align:center; padding-top:4px; margin-top:40px; font-weight:bold;">
+            Signature (or thumb impression if illiterate) and name of pensioner and address[cite: 1]
+          </div>
+        </div>
+      </div>
+      
+      <div style="border-top:1px dashed #000; margin-top:20px; padding-top:10px;">
+        <p style="font-weight:bold; margin-bottom:4px;">Acknowledgement to be sent by the Pension Disbursing Authority / Head of Office[cite: 1]</p>
+        <p>Certified that application/nomination has been received from Shri/Smt. <strong class="blank" style="min-width:250px;">${upper(blank(t.staffName))}</strong> (Name of Pensioner) whose address is _________________________________________________.[cite: 1]</p>
+        
+        <div style="display:flex; justify-content:space-between; margin-top:20px;">
+          <div>
+            Place ___________________________[cite: 1]<br><br>
+            Date ___________________________[cite: 1]
+          </div>
+          <div style="text-align:center; width:70mm;">
+            <div style="border-top:1px solid #111; padding-top:4px; font-weight:bold; font-size:10pt;">
+              Signature of the Pension Disbursing Authority / Head of Office[cite: 1]<br>
+              Full Address: ___________________________[cite: 1]
+            </div>
           </div>
         </div>
       </div>
@@ -763,40 +797,38 @@ function docD(t,c){
     
     let altNameCell = "";
     if(alt) {
-      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)}${isMinor ? ` AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}` : ""}</span>`;
+      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)} AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}</span>`;
     }
     
-    row += `<td style="width:22%;">${altNameCell}</td>`;
-    row += `<td style="width:9%;" class="center">${alt ? (isMinor ? "NA" : `${sharePct}% (Rs. ${inr((c.gratuityAmount * sharePct)/100)})`) : ""}</td>`;
-    row += `<td style="width:13%;">${alt ? "Son or Daughter and DOB:____________________" : ""}</td>`;
+    row += `<td style="width:25%;">${altNameCell}</td>`;
+    row += `<td style="width:10%;" class="center">${alt ? (isMinor ? "NA" : `${sharePct}%`) : ""}</td>`;
     row += "</tr>";
     rows.push(row);
   }
 
   return `<div class="page landscape-layout">
-    <div style="font-family:'Times New Roman', Georgia, serif; font-size:11.3pt; line-height:1.45;">
-      <div style="text-align:right; font-weight:bold; font-size:12pt; margin-bottom:5px;">Enclosure &mdash; &lsquo;D&rsquo;</div>
-      <h2 class="doc-title" style="margin: 0 0 2px 0;">Nomination for Payment of Death-Cum-Retirement Gratuity</h2>
-      <h3 class="doc-sub" style="margin: 0 0 12px 0; font-weight:normal;">(To be furnished by the Employee)</h3>
+    <div style="font-family:'Times New Roman', Georgia, serif; font-size:10.5pt; line-height:1.45;">
+      <div style="text-align:right; font-weight:bold; font-size:11pt; margin-bottom:5px;">ENCLOSURE - 'D'</div>
+      <h2 class="doc-title" style="margin: 0 0 2px 0; font-size:13pt;">NOMINATION FOR PAYMENT OF DEATH-CUM-RETIREMENT GRATUITY[cite: 1]</h2>
+      <h3 class="doc-sub" style="margin: 0 0 12px 0; font-weight:normal; font-size:10.5pt;">(To be furnished by the Employee)[cite: 1]</h3>
       
       <p style="text-align:justify; margin-bottom:12px;">
-        I hereby nominate the person mentioned below, who are members of my family, and confer on them the right to receive, to the extent specified below, any gratuity that may be sanctioned by Government in the event of my death while in service and the right to receive on my death, to the extent specified below, any gratuity which having become admissible to me on retirement may remain unpaid at my death:
+        I hereby nominate the person mentioned below, who are members of my family, and confer on them the right to receive, to the extent specified below, any gratuity that may be sanctioned by Govemment in the event of my death while in service and the right to receive on my death, to the extent specified below, any gratuity which having became admissible to me on retirement my remain unpaid at my death:[cite: 1]
       </p>
 
       <table class="pension-table" style="width:100%; margin-bottom:15px;">
         <thead>
           <tr>
-            <th>Name and address of nominees</th>
+            <th>Name and Address of Nominees</th>
             <th>Relationship with employee</th>
             <th>Age</th>
-            <th>Amount of Share of gratuity payable to each</th>
-            <th>Contingencies on the happening of which the nomination shall become invalid</th>
-            <th>Name, address and relationship of the person or persons, if any, to whom the right conferred on the nominee shall pass in the event of the nominee pre-deceasing the employee or the nominee dying after the death of the employee but before receiving payment of the gratuity</th>
-            <th>Amount of share of gratuity payable to each Rs. P.</th>
-            <th>Relationship of Nominee (Son / Daughter) &amp; Date of Birth</th>
+            <th>Amount of share of gratuity payable to each</th>
+            <th>Contigencies on the happening of which the nomination shall become invalid</th>
+            <th>Name, address and relationship of the person of persons, if any, to whom the right conferred on the nominees shall pass in the event of the nominee pre-deceasing the employee or the nominee dying after the death of the employee but before receiving payment</th>
+            <th>Amount of share of gratuity gratuity payable to each</th>
           </tr>
           <tr style="font-size:8.5pt;" class="center">
-            <td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td><td>(7)</td><td>(8)</td>
+            <td>(1)[cite: 1]</td><td>(2)[cite: 1]</td><td>(3)[cite: 1]</td><td>(4)[cite: 1]</td><td>(5)[cite: 1]</td><td>(6)[cite: 1]</td><td>(7)[cite: 1]</td>
           </tr>
         </thead>
         <tbody>
@@ -804,23 +836,31 @@ function docD(t,c){
         </tbody>
       </table>
 
-      <p style="margin-bottom:12px;">This nomination supersedes the nomination made by me earlier on ____________________ which stands cancelled.</p>
+      <p style="margin-bottom:12px;">*The nomination supersedes the nomination made by me earlier on ____________________ which stands cancelled.[cite: 1]</p>
       
-      <p style="margin-bottom:20px;">Dated this ____________________ day of ____________________ 20____ at ____________________</p>
+      <p style="margin-bottom:20px;">Dated this ____________________ day of ____________________ 20____ at ____________________[cite: 1]</p>
 
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:25px;">
         <div style="width:50%;">
-          <p style="margin-bottom:4px;">Witness to Signature :</p>
-          <div style="border-bottom:1px solid #333; height:8mm; width:70mm; margin-bottom:6px;">(1)</div>
-          <div style="border-bottom:1px solid #333; height:8mm; width:70mm; margin-bottom:15px;">(2)</div>
+          <p style="margin-bottom:4px;">Witness to Signature :[cite: 1]</p>
+          <div style="border-bottom:1px solid #333; height:8mm; width:70mm; margin-bottom:6px;">(1) _____________________________________[cite: 1]</div>
+          <div style="border-bottom:1px solid #333; height:8mm; width:70mm; margin-bottom:15px;">(2) _____________________________________[cite: 1]</div>
+          
+          <div style="font-size:8.5pt; line-height:1.3; color:#222; margin-top:15px;">
+            <strong>Note:</strong><br>
+            (1) The employee shall draw lines across the blank space below the last entry to prevent the insertion of any name after he has signed.[cite: 1]<br>
+            (2) Fourth column should be filled in so as to cover the whole amount of gratuity.[cite: 1]<br>
+            (3) The amount/share of gratuity shown in last column to cover the whole amount/share payable to the original nominee.[cite: 1]<br>
+            *Strike out, if not applicable[cite: 1]
+          </div>
         </div>
         
         <div style="width:45%; text-align:right; display:flex; flex-direction:column; align-items:flex-end;">
           <div style="border-top:1px solid #111; width:65mm; text-align:center; padding-top:4px; margin-bottom:40px; font-weight:bold;">
-            Signature of Employee
+            (Signature of Employee)[cite: 1]
           </div>
           <div style="border-top:1px solid #111; width:65mm; text-align:center; padding-top:4px; font-weight:bold;">
-            Signature of Head of Office (Office Seal)
+            Signature of Head of Office (Office Seal)[cite: 1]
           </div>
         </div>
       </div>
@@ -869,57 +909,89 @@ function docSBEmploymentCertText(t,c){
 }
 
 function docNOLIA(t,c){
-  const g=t.gender;
   return pageWrap(`
-    <p class="small">(To be filled in by the Appointing Authority / Head of the Office / Sub-Inspector (Circle))</p>
-    <h2 class="doc-title">Liability / No-Liability Certificate</h2>
-    <p class="small center">To be issued on the date of superannuation by the appointing Authority / Head of the Office / Sub-Inspector (Circle)</p>
-    <div class="to-block"><p>To<br>The Pension Disbursing Officer / Treasury Officer<br>${blank(t.treasury)}</p></div>
-    <p>${g==="MALE"?"Shri":"Smt."} ${blank(proper(t.staffName))}; ${blank(t.designation)} (Designation) of ${blank(proper(t.schoolName))} (Name of the Institution) to be retired on superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} [a.n.]</p>
-    <p><strong>Certified that -</strong></p>
-    <ol class="items">
-      <li>${heShe(g)} will draw Basic pay @ Rs. ${inr(t.lastBasicPay)}/- per month on the date of superannuation, and the total amount of Pension Basic and Gratuity reckonable is Rs. ${inr(c.pensionBasic)} &amp; Rs. ${inr(c.gratuityAmount)} respectively.</li>
-      <li>The service rendered by ${himHer(g)} for the period from ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} (Dt. of issue of PC) to ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} (Dt. of Retirement) qualifies for pension and Gratuity.</li>
-      <li>No court case / Departmental proceeding is pending against ${himHer(g)}.</li>
-      <li>${heShe(g)} has no liability which is yet to be recovered from ${hisHer(g)} retirement benefit except those which have been mentioned in ${hisHer(g)} pay certificate.</li>
-      <li>No Provisional Pension and no Provisional Gratuity have been sanctioned to ${himHer(g)}.</li>
-      <li>${HisHer(g)} pensionary benefits may be released accordingly.</li>
-    </ol>
-    <div class="sig-line" style="margin-top:16mm;">Signature of the ${blank(upper(hoiSignatory(t)))} — Office Seal</div>
+    <div style="font-family:'Times New Roman', Times, serif;">
+      <h2 class="doc-title" style="margin-bottom: 2px;">LIABILILITY/ NO LIABILILITY CERTIFICATE[cite: 3]</h2>
+      <h3 class="doc-sub" style="font-weight: normal; margin-bottom: 15px;">To be issued on the date of superannuation by the appointing Authority/ Head of the office /Sub-inspector (Circle)[cite: 3]</h3>
+      
+      <div class="to-block">
+        <p>To<br>The Pension Disbursing Officer /Treasury Officer<br>${upper(blank(t.treasury))}[cite: 3]</p>
+      </div>
+      
+      <p>Shri/Smt. <strong>${upper(blank(t.staffName))}</strong>; Designation <strong>${blank(t.designation)}</strong> of <strong>${blank(proper(t.schoolName))}</strong> to be retired on superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong> (a.n.)[cite: 3]</p>
+      
+      <p>Certified that -[cite: 3]</p>
+      <ol class="items">
+        <li>He/She will draw Basic pay @ Rs. ${inr(t.lastBasicPay)}/- per month on the date of superannuation and total amt. of pay reckonable for pension and Gratuity is Rs. ${inr(c.pensionBasic)} &amp; Rs. ${inr(c.gratuityAmount)}.[cite: 3]</li>
+        <li>The service rendered by him/her during the period from <strong>${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))}</strong> (Dt. Of issue of PC) To <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong> (Dt. of Retirement) qualifies for pension and Gratuity.[cite: 3]</li>
+        <li>No court case/ Departmental proceedings is pending against him/her.[cite: 3]</li>
+        <li>He/She has no liability which is yet to be recovered from his/her retirement benefit except those which have been mentioned in his/her pay certificate. Following amount have to be recovered from the Gratuity and pension Relief in addition to the amount mentioned in his pay certificate.[cite: 3]<br>
+          <div style="margin: 5px 0; padding-left: 15px;">
+            1. ______________________ for ______________________[cite: 3]<br>
+            2. ______________________ for ______________________[cite: 3]<br>
+            3. ______________________ for ______________________[cite: 3]
+          </div>
+        </li>
+        <li>No Provisional pension and No Provisional Gratuity have been sanctioned to him/her. Provisional Gratuity of Rs. ______________________ and Provisional pension @ Rs. ______________________ .p.m. for the period from ______________________ To ______________________ have been sanctioned and paid to him/her.[cite: 3]</li>
+        <li>Following amount have been mentioned in the pay certificate as to be recovered from the pensionary benefits.[cite: 3]<br>
+          <div style="margin: 5px 0; padding-left: 15px;">
+            i. Rs ______________________ for ______________________[cite: 3]<br>
+            ii. Rs ______________________ for ______________________[cite: 3]<br>
+            iii. Rs ______________________ for ______________________[cite: 3]
+          </div>
+        </li>
+      </ol>
+      <p>His/Her pensionary benefits may be released accordingly.[cite: 3]</p>
+      
+      <div style="display:flex; justify-content:space-between; margin-top:25px;">
+        <div>Date:- _____________________</div>
+        <div style="text-align:center; width:80mm; border-top:1px solid #111; padding-top:4px; font-weight:bold;">
+          Signature of ${upper(hoiSignatory(t))}<br>Office Seal[cite: 3]
+        </div>
+      </div>
+    </div>
   `);
 }
 
 function docPAYC(t,c){
-  const g=t.gender;
-  const incDate = toDate(t.lastIncrementDate);
-  const payChanges = Number(t.lastBasicPay)!==Number(t.lastButBasicPay);
-  const incrementApplies = incDate && c.dor && incDate <= c.dor && payChanges;
-  const incrementClause = incrementApplies
-    ? `As the annual increment in this scale falls due on the 1st July, and ${fmtD(incDate,"dd-mm-yyyy")} falls before the date of Superannuation, ${hisHer(g)} pay will be raised with effect from ${fmtD(incDate,"dd-mm-yyyy")} to Rs. ${inr(t.lastBasicPay)}/- p.m., which will remain the fixed and final Basic Pay up to the date of ${hisHer(g)} Superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""}.`
-    : `No further annual increment (due on 1st July) falls before the date of Superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""}; hence ${hisHer(g)} Basic Pay remains fixed at Rs. ${inr(t.lastBasicPay)}/- p.m. up to that date.`;
   return pageWrap(`
-    <p class="small">(To be filled in by the Appointing Authority / Head of the Office)</p>
-    <h2 class="doc-title">Pay Certificate</h2>
-    <p class="small center">(For Retirement / Death Case only)</p>
-    <p>Pay certificate of ${blank(proper(t.staffName))}; ${blank(t.designation)} (Designation) of ${blank(proper(t.schoolName))} (Name of the Institution), for the purpose of Pension / Gratuity / Family Pension.</p>
-    <p><strong>PAY</strong></p>
-    <ol class="items">
-      <li>The Basic Pay of ${proper(t.staffName)}; ${blank(t.designation)} of ${proper(t.schoolName)} is / was Rs. ${inr(t.lastButBasicPay)}/- per month, in the scale of Pay / Level: ${blank(c.payLevel)}.</li>
-      <li>${incrementClause}</li>
-      <li>${heShe(g)} draws a Special Pay of Rs. NIL in addition to ${hisHer(g)} Basic Pay in the aforesaid scale.</li>
-      <li>${heShe(g)} draws the following elements viz.
-        <ul>
-          <li>D.A. - Rs. ${inr(Math.round((Number(t.lastBasicPay)||0)*(Number(t.daPercent)||0)/100))} @ ${blank(t.daPercent)}%</li>
-          <li>${String(t.hraMode).toUpperCase()==="FIXED" ? `HRA - Rs. ${inr(c.hraAmount)} [FIXED]` : `HRA - Rs. ${inr(c.hraAmount)} @ ${blank(t.hraPercentValue)}%`}</li>
-          <li>MA - Rs. 500/-</li>
-        </ul>
-        which have been declared as pay for the purpose of pension and other retirement benefits.
-      </li>
-    </ol>
-    <p><strong>Recoveries of Loans and Advances:</strong> Loan(s) / Advance(s) of Rs. ______________ was sanctioned for ______________, of which ______________ instalment(s) have been recovered up to ______________ @ Rs. ______________, and a further ______________ instalment(s) @ Rs. ______________ will be recovered up to the date of Superannuation, leaving a balance of Rs. ______________ outstanding on the date of Superannuation to be recovered from Gratuity.</p>
-    <p><strong>Overdrawals of Pay and Allowances etc.:</strong> Shri / Smt. ______________________ had overdrawn an amount of Rs. ______________ on account of ______________, of which Rs. ______________ shall be recovered up to the date of Superannuation, leaving a balance of Rs. ______________ outstanding to be recovered from Gratuity.</p>
-    <p>All outstanding dues, as on the date of Superannuation, shall be recovered from the amount of gratuity and relief on pension straightway by the Director of Pension, Provident Fund &amp; Group Insurance.</p>
-    <div class="sig-line" style="margin-top:14mm;">Signature of the ${blank(upper(hoiSignatory(t)))} — Office Seal</div>
+    <div style="font-family:'Times New Roman', Times, serif;">
+      <p class="small center">(To be filled in by the Head of the Institution /Administrator/Secretary / Sub Inspector-Circle)[cite: 4]</p>
+      <h2 class="doc-title" style="margin-top:2px;">PAY CERTIFICATE[cite: 4]</h2>
+      <p class="center small"><strong>(For Retirement / Death Case only)[cite: 4]</strong></p>
+      
+      <p style="margin-top:15px;">Pay certificate of Shri/Smt. <strong>${upper(blank(t.staffName))}</strong> Designation <strong>${blank(t.designation)}</strong> of <strong>${blank(proper(t.schoolName))}</strong> (Name of the Institution) for the purpose of Pension / Gratuity / Family Pension.[cite: 4]</p>
+      
+      <p><strong>PAY</strong>[cite: 4]</p>
+      <div style="padding-left:10px; line-height:1.6;">
+        <div>1. (a) The Basic pay of Shri/Smt. <strong>${upper(blank(t.staffName))}</strong> as on ________________ is/was Rs. <strong>${inr(t.lastButBasicPay)}</strong> p.m. in the scale of pay of Rs. <strong>${blank(c.payLevel)}</strong>[cite: 4]</div>
+        <div>(b). His / Her last increment before retirement in the aforesaid scale is due on <strong>${blank(fmtDate(t.lastIncrementDate,"dd-mm-yyyy"))}</strong> which will raise his/her pay to Rs. <strong>${inr(t.lastBasicPay)}</strong> p.m. up to the date of his/her Superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong>[cite: 4]</div>
+        <div>(c) He/She draws a Special Pay of Rs. <strong>NIL</strong> in addition to his / her Basic Pay in the aforesaid scale,[cite: 4]</div>
+        <div>(d) He/She draws the following elements viz.[cite: 4]</div>
+        <div style="padding-left:20px;">
+          (i) D.A. - Rs. <strong>${inr(Math.round((Number(t.lastBasicPay)||0)*(Number(t.daPercent)||0)/100))}</strong> @ ${blank(t.daPercent)}%[cite: 4]<br>
+          (ii) HRA - Rs. <strong>${inr(c.hraAmount)}</strong>[cite: 4]<br>
+          (iii) M.A. - Rs. <strong>500/-</strong>[cite: 4]<br>
+          (iv) __________________________________________[cite: 4]
+        </div>
+        <div style="margin-top:4px;">Which have been declared as pay for the purpose of pension and other retirement benefits.[cite: 4]</div>
+      </div>
+      
+      <p style="margin-top:12px;"><strong>RECOVERIES OF LOANS AND ADVANCES</strong>[cite: 4]</p>
+      <p>Loans /Advances of Rs ________________ was sanctioned for ________________ of which ________________ instalment have been recovered up to ________________ @Rs ________________ and further ________________ instalments @Rs. ________________ will be recovered up to the date of Superannuation leaving a balance of @Rs ________________ as outstanding on the date of Superannuation to be recovered from Gratuity.[cite: 4]</p>
+      
+      <p style="margin-top:12px;"><strong>OVERDRAWALS OF PAY AND ALLOWANCES ETC.</strong>[cite: 4]</p>
+      <p>Shri/Smt. ________________ had overdrawn an amount of Rs ________________ on account of ________________ of which Rs. ________________ shall be recovered up to the date of Superannuation leaving a balance of Rs. ________________ as outstanding on the date of Superannuation to be covered from Gratuity.[cite: 4]</p>
+      
+      <p style="margin-top:12px;">All outstanding dues, as on the date of Superannuation, shall be recovered from the amount of gratuity and relief on pension straightway by the Director of Pension, Provident Fund &amp; Group Ins.[cite: 4]</p>
+      
+      <div style="display:flex; justify-content:space-between; margin-top:35px;">
+        <div>Date: _____________________</div>
+        <div style="text-align:center; width:80mm; border-top:1px solid #111; padding-top:4px; font-weight:bold;">
+          Signature of the ${upper(hoiSignatory(t))}<br>Office Seal[cite: 4]
+        </div>
+      </div>
+    </div>
   `);
 }
 
@@ -1069,10 +1141,10 @@ function docRESC(t,c){
     </ol>
     <p>After proper physical verification of related school documents, it is observed that -</p>
     <ol class="items" type="i">
-      <li>the existing ${proper(t.designation)}; ${proper(t.staffName)} of this school has no liabilities either in cash or kind with the school, A.I./S(S.E.), ${proper(t.schoolSubDiv)} or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F. which is yet to be recovered from his / her Gratuity &amp; Pension Relief in addition to the amount mentioned in his / her pay certificate.</li>
-      <li>No Court Case / Departmental Proceeding is pending against him / her.</li>
-      <li>No Provisional Pension has been sanctioned to the employee.</li>
-      <li>No Provisional Gratuity has been sanctioned to the employee.</li>
+      <li>the existing ${proper(t.designation)}; ${proper(t.staffName)} of this school has no liabilities either in cash or kind with the school, A.I./S(S.E.), ${proper(t.schoolSubDiv)} or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F. which is yet to be recovered from his / her Gratuity &amp; Pension Relief in addition to the amount mentioned in his / her pay certificate.[cite: 3]</li>
+      <li>No Court Case / Departmental Proceeding is pending against him / her.[cite: 3]</li>
+      <li>No Provisional Pension has been sanctioned to the employee.[cite: 3]</li>
+      <li>No Provisional Gratuity has been sanctioned to the employee.[cite: 3]</li>
       <li>It also may be noted that he / she rendered service acceptably in this school to the post of ${proper(t.designation)} for the period from ${blank(fmtDate(t.dojThisSchool,"dd-mm-yyyy"))} to till date, and no Utilization Certificate on different grants sanctioned in favour of this school by SSM and other departments is pending for submission after utilization during his / her service period. Cash Books, all Ledgers, Pass Book, various record books, service books, etc. are kept in proper order and up-to-date. Assets as per Stock Register agree with physical verification. Presently no litigation is found about any matter in this school.</li>
       <li>Mid-Day-Meal is running smoothly in this school. Stock (CB) of Rice on this date as per record &amp; physical verification: ______________ kg.</li>
       <li>Details of Closing Balance in various bank account(s):
@@ -1132,24 +1204,24 @@ const DOC_RENDERERS = {
 };
 
 const DOC_LIST = [
-  { id:"COVER",       name:"Cover Page",              sub:"Pension application case file label" },
-  { id:"SB",           name:"Service Book Certificate", sub:"Certificates [Service Book]" },
-  { id:"AB",           name:"Enclosure A & B",          sub:"Specimen signatures & photographs" },
-  { id:"E",            name:"Enclosure E",              sub:"Nomination / Family details" },
-  { id:"D",            name:"Enclosure D",              sub:"Death / Invalidity" },
-  { id:"HRAD",         name:"HRA Declaration",          sub:"Employment / Non-Employment & HRA of Spouse" },
-  { id:"HRAC",         name:"HRA Certificate",          sub:"Certificate regarding HRA of Spouse" },
-  { id:"NOLIA",        name:"No-Liability Certificate", sub:"Liability / No-Liability Certificate" },
-  { id:"PAYC",         name:"Pay Certificate",          sub:"Pay Certificate" },
-  { id:"FLP",          name:"Forwarding Letter (Pension)", sub:"To D.I. of Schools - Pension papers" },
-  { id:"FLCHO",        name:"Forwarding Letter (Charge Handover)", sub:"To D.I. of Schools - Charge Hand Over" },
-  { id:"APPNOLIA",     name:"Application for No-Liability", sub:"Request for No-Liability Certificate" },
-  { id:"FLNOLIACPC",   name:"Forwarding Letter (No-Liability, CPC)", sub:"To Circle Project Co-ordinator" },
-  { id:"FLNOLIA",      name:"Forwarding Letter (No-Liability)", sub:"To D.I. of Schools - No-Liability Certificate" },
-  { id:"NOLIACERT",    name:"No-Liability Certificate (TWIMC)", sub:"To Whom It May Concern" },
-  { id:"RESC",         name:"M.C. Resolution",          sub:"Resolution Adopted by M.C. / Administrator" },
-  { id:"CHO",          name:"Charge Hand Over / Take Over", sub:"Charge Hand Over" },
-  { id:"CPC",          name:"Certificate (TWIMC)",       sub:"To Whom It May Concern" }
+  { id:"COVER",       name:"Cover Page",              sub:"Case file label" },
+  { id:"SB",          name:"Service Book Certificates", sub:"Certificates [Service Book] + Leave" },
+  { id:"AB",          name:"Enclosure A / B",          sub:"Specimen signatures & photographs" },
+  { id:"E",           name:"Enclosure E",               sub:"Nomination — Life Time Arrear of Pension" },
+  { id:"D",           name:"Enclosure D",               sub:"Nomination — Death-cum-Retirement Gratuity" },
+  { id:"HRAD",        name:"HRA Declaration",           sub:"Employee declaration of spouse HRA" },
+  { id:"HRAC",        name:"HRA Certificate",           sub:"Employment / non-employment & HRA of spouse" },
+  { id:"NOLIA",       name:"Liability Certificate",     sub:"Issued by appointing authority on retirement" },
+  { id:"PAYC",        name:"Pay Certificate",           sub:"For pension / gratuity / family pension" },
+  { id:"FLP",         name:"Forwarding Letter (Pension)", sub:"To D.I. of Schools — submission of case" },
+  { id:"FLCHO",       name:"Forwarding Letter (Charge)", sub:"Charge hand over / take over request" },
+  { id:"APPNOLIA",    name:"Application for NLC",       sub:"Pensioner's request for No Liability Certificate" },
+  { id:"FLNOLIACPC",  name:"Forwarding Letter (NLC–CPC)", sub:"To Circle Project Co-ordinator" },
+  { id:"FLNOLIA",     name:"Forwarding Letter (NLC)",   sub:"To D.I. of Schools — No Liability Certificate" },
+  { id:"NOLIACERT",   name:"No Liability Certificate",  sub:"To Whom It May Concern" },
+  { id:"RESC",        name:"Resolution",                sub:"M.C. / Administrator Order" },
+  { id:"CHO",         name:"Charge Hand/Take Over",     sub:"Charge hand over & take over note" },
+  { id:"CPC",         name:"No Liability (UC/SSM)",     sub:"To Whom It May Concern — utilization certificate" }
 ];
 
 /* =========================================================================
