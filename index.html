@@ -585,7 +585,7 @@ function docSB(t,c){
 function docAB(t,c){
   const renderSigSet = (setNumber) => `
     <div style="margin-top: 15px; margin-bottom: 25px;">
-      <div style="text-align:left; font-weight:bold; font-size:10.5pt; margin-bottom: 8px;">
+      <div style="text-align:right; font-weight:bold; font-size:10.5pt; margin-bottom: 8px;">
         <span style="border-bottom:1px solid #111; padding-bottom:2px; width:65mm; display:inline-block; text-align:center;">Signature Attested</span>
       </div>
       <div style="line-height: 2.2; text-align:left; padding-left:5px;">
@@ -609,6 +609,9 @@ function docAB(t,c){
         <div style="text-align:left; font-size:12.5pt; font-weight:bold; margin:15px 0 20px 0;">
           Name of the Pensioner: <span style="text-decoration:underline;">${upper(blank(t.staffName))}</span>
           <div style="font-size:9.5pt; font-weight:normal; margin-top:2px; color:#333;">[In Block Letters]</div>
+        </div>
+        <div style="text-align:left; font-size:10.5pt; margin:0 0 6px 0;">
+          Submission &nbsp; Date: ____________________ &nbsp;&nbsp;&nbsp; Place: ____________________ &nbsp;&nbsp;&nbsp; Time: ____________________
         </div>
       </div>
 
@@ -659,16 +662,17 @@ function docE(t,c){
     
     let altNameCell = "";
     if (alt) {
-      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)} AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}</span>`;
+      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)}${isMinor ? ` AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}` : ""}</span>`;
     }
     
-    row += `<td style="width:18%;">${altNameCell}</td>`;
-    row += `<td style="width:8%;" class="center">${alt ? blank(proper(alt.rel)) : ""}</td>`;
-    row += `<td style="width:9%;" class="center">${alt ? (isMinor ? "NA" : blank(fmtDate(alt.dob,"dd-mm-yyyy"))) : ""}</td>`;
-    row += `<td style="width:13%;">${alt && isMinor ? "Minor - Guardian details required" : ""}</td>`;
+    row += `<td style="width:16%;">${altNameCell}</td>`;
+    row += `<td style="width:7%;" class="center">${alt ? blank(proper(alt.rel)) : ""}</td>`;
+    row += `<td style="width:8%;" class="center">${alt ? (isMinor ? "NA" : blank(fmtDate(alt.dob,"dd-mm-yyyy"))) : ""}</td>`;
+    row += `<td style="width:12%;">${alt && isMinor ? "Minor - Guardian details required" : ""}</td>`;
     if(i===0){
-      row += `<td rowspan="${rowCount}" style="width:10%;" class="center">Death / Invalidity</td>`;
+      row += `<td rowspan="${rowCount}" style="width:9%;" class="center">Death / Invalidity</td>`;
     }
+    row += `<td style="width:13%;">${alt ? "Son or Daughter and DOB:____________________" : ""}</td>`;
     row += "</tr>";
     rows.push(row);
   }
@@ -699,9 +703,10 @@ function docE(t,c){
             <th>Date of Birth if the other nominee is minor</th>
             <th>Name and address of person who may receive the pension during the other nominee's minority</th>
             <th>Contingency on happening of which nomination shall become invalid</th>
+            <th>Relationship of Nominee (Son / Daughter) &amp; Date of Birth</th>
           </tr>
           <tr style="font-size:8.5pt;" class="center">
-            <td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td><td>(7)</td><td>(8)</td><td>(9)</td>
+            <td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td><td>(7)</td><td>(8)</td><td>(9)</td><td>(10)</td>
           </tr>
         </thead>
         <tbody>
@@ -758,11 +763,12 @@ function docD(t,c){
     
     let altNameCell = "";
     if(alt) {
-      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)} AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}</span>`;
+      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)}${isMinor ? ` AND DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}` : ""}</span>`;
     }
     
-    row += `<td style="width:25%;">${altNameCell}</td>`;
-    row += `<td style="width:10%;" class="center">${alt ? (isMinor ? "NA" : `${sharePct}% (Rs. ${inr((c.gratuityAmount * sharePct)/100)})`) : ""}</td>`;
+    row += `<td style="width:22%;">${altNameCell}</td>`;
+    row += `<td style="width:9%;" class="center">${alt ? (isMinor ? "NA" : `${sharePct}% (Rs. ${inr((c.gratuityAmount * sharePct)/100)})`) : ""}</td>`;
+    row += `<td style="width:13%;">${alt ? "Son or Daughter and DOB:____________________" : ""}</td>`;
     row += "</tr>";
     rows.push(row);
   }
@@ -787,9 +793,10 @@ function docD(t,c){
             <th>Contingencies on the happening of which the nomination shall become invalid</th>
             <th>Name, address and relationship of the person or persons, if any, to whom the right conferred on the nominee shall pass in the event of the nominee pre-deceasing the employee or the nominee dying after the death of the employee but before receiving payment of the gratuity</th>
             <th>Amount of share of gratuity payable to each Rs. P.</th>
+            <th>Relationship of Nominee (Son / Daughter) &amp; Date of Birth</th>
           </tr>
           <tr style="font-size:8.5pt;" class="center">
-            <td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td><td>(7)</td>
+            <td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td><td>(7)</td><td>(8)</td>
           </tr>
         </thead>
         <tbody>
