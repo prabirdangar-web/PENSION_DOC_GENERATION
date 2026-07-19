@@ -561,6 +561,7 @@ function docCOVER(t,c){
 
 function docSB(t,c){
   const g = t.gender;
+  const sg = g==="MALE" ? "FEMALE" : "MALE";
   const doj1 = t.dojFirst, doj2 = t.dojPrevSchool2, doj3 = t.dojThisSchool;
   let prevSchoolClause = "";
   if(doj1 && doj3 && doj1!==doj3){
@@ -576,7 +577,7 @@ function docSB(t,c){
     + (Number(t.hraOverdrawn)>0 ? ` — provided that excess HRA and/or salary drawn jointly, or by spouse or ${himHer(g)}, amounting Rs.${inr(t.hraOverdrawn)} has been refunded via TR-7 ${safe(t.challanNoDate)}.` : ".");
   const cert14 = t.spouseStatus==="IN SERVICE" ? cert4b :
     (["HOUSEWIFE","NOT IN SERVICE"].includes(t.spouseStatus) ?
-      `Certified that ${blank(proper(t.spouseName))}; ${g==="MALE"?"Wife":"Husband"} of ${proper(t.staffName)} is ${g==="MALE"?"Housewife and not in service":"Not in Service"}. He / she was not engaged in any service under the Government of India or any State Government Undertaking or any statutory or Local body, Educational Institution, etc. at anywhere and anytime since or before their marriage, and hence no question for drawn of HRA by him / her. HRA drawn by ${proper(t.staffName)} is as per Grant-in-Aid rules and within the prescribed limit throughout ${hisHer(g)} service.`
+      `Certified that ${blank(proper(t.spouseName))}; ${g==="MALE"?"Wife":"Husband"} of ${proper(t.staffName)} is ${g==="MALE"?"Housewife and not in service":"Not in Service"}. ${heShe(sg)} was not engaged in any service under the Government of India or any State Government Undertaking or any statutory or Local body, Educational Institution, etc. at anywhere and anytime since or before their marriage, and hence no question for drawn of HRA by ${himHer(sg)}. HRA drawn by ${proper(t.staffName)} is as per Grant-in-Aid rules and within the prescribed limit throughout ${hisHer(g)} service.`
       : (t.spouseStatus==="UN MARRIED" ? `Certified that ${proper(t.staffName)} is Unmarried.` : ""));
 
   return pageWrap(`
@@ -588,8 +589,8 @@ function docSB(t,c){
       <li>The service and leave statement of the incumbent has been properly verified since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date from relevant school records and found correct.[cite: 3]</li>
       <li>The service rendered by ${himHer(g)} has been satisfactory and ${heshe(g)} was present on both the closing and reopening date of each long vacation throughout ${hisHer(g)} period of service since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date without any break of service.</li>
       <li>The incumbent has no liabilities with the school or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F.[cite: 3]</li>
-      <li>There is no court case or any litigation against his / her service.[cite: 3]</li>
-      <li>He/She enjoyed ${blank(t.medicalLeave)} days Medical Leave with full average pay, ${blank(t.halfPayLeave)} days Half Pay Leave, ${blank(t.extraOrdinaryLeave)} days Extra Ordinary Leave and ${blank(t.specialLeave)} days Special Leave during tenure i.e. ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date of ${hisHer(g)} service period, and other leave if any, all leaves have been approved by the M.C. / Competent Authority.</li>
+      <li>There is no court case or any litigation against ${hisHer(g)} service.[cite: 3]</li>
+      <li>${heShe(g)} enjoyed ${blank(t.medicalLeave)} days Medical Leave with full average pay, ${blank(t.halfPayLeave)} days Half Pay Leave, ${blank(t.extraOrdinaryLeave)} days Extra Ordinary Leave and ${blank(t.specialLeave)} days Special Leave during tenure i.e. ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date of ${hisHer(g)} service period, and other leave if any, all leaves have been approved by the M.C. / Competent Authority.</li>
       <li>${heShe(g)} will retire on attaining the age of superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"[DOB required]"} and ${hisHer(g)} basic pay as per ROPA-19 will be Rs. ${inr(t.lastBasicPay)} on the date of superannuation retirement ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""} (a.n.).[cite: 3]</li>
       <li>It is recommended that Pension, Gratuity and other retirement benefits should be admissible to ${himHer(g)} as per ROPA-19 rules.</li>
     </ol>
@@ -658,6 +659,7 @@ function docAB(t,c){
 }
 
 function docE(t,c){
+  const g = t.gender;
   const alternates = [
     t.child1Name ? {name:proper(t.child1Name), rel:proper(t.child1Relation), dob:t.child1Dob} : null,
     t.child2Name ? {name:proper(t.child2Name), rel:proper(t.child2Relation), dob:t.child2Dob} : null,
@@ -749,7 +751,7 @@ function docE(t,c){
       
       <div style="border-top:1px dashed #000; margin-top:20px; padding-top:10px;">
         <p style="font-weight:bold; margin-bottom:4px;">Acknowledgement to be sent by the Pension Disbursing Authority / Head of Office[cite: 1]</p>
-        <p>Certified that application/nomination has been received from Shri/Smt. <strong class="blank" style="min-width:250px;">${upper(blank(t.staffName))}</strong> (Name of Pensioner) whose address is _________________________________________________.[cite: 1]</p>
+        <p>Certified that application/nomination has been received from ${g==="MALE"?"Shri":"Smt."} <strong class="blank" style="min-width:250px;">${upper(blank(t.staffName))}</strong> (Name of Pensioner) whose address is _________________________________________________.[cite: 1]</p>
         
         <div style="display:flex; justify-content:space-between; margin-top:20px;">
           <div>
@@ -848,7 +850,7 @@ function docD(t,c){
           
           <div style="font-size:8.5pt; line-height:1.3; color:#222; margin-top:15px;">
             <strong>Note:</strong><br>
-            (1) The employee shall draw lines across the blank space below the last entry to prevent the insertion of any name after he has signed.[cite: 1]<br>
+            (1) The employee shall draw lines across the blank space below the last entry to prevent the insertion of any name after ${heshe(t.gender)} has signed.[cite: 1]<br>
             (2) Fourth column should be filled in so as to cover the whole amount of gratuity.[cite: 1]<br>
             (3) The amount/share of gratuity shown in last column to cover the whole amount/share payable to the original nominee.[cite: 1]<br>
             *Strike out, if not applicable[cite: 1]
@@ -909,6 +911,7 @@ function docSBEmploymentCertText(t,c){
 }
 
 function docNOLIA(t,c){
+  const g=t.gender;
   return pageWrap(`
     <div style="font-family:'Times New Roman', Times, serif;">
       <h2 class="doc-title" style="margin-bottom: 2px;">LIABILILITY/ NO LIABILILITY CERTIFICATE[cite: 3]</h2>
@@ -918,21 +921,21 @@ function docNOLIA(t,c){
         <p>To<br>The Pension Disbursing Officer /Treasury Officer<br>${upper(blank(t.treasury))}[cite: 3]</p>
       </div>
       
-      <p>Shri/Smt. <strong>${upper(blank(t.staffName))}</strong>; Designation <strong>${blank(t.designation)}</strong> of <strong>${blank(proper(t.schoolName))}</strong> to be retired on superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong> (a.n.)[cite: 3]</p>
+      <p>${g==="MALE"?"Shri":"Smt."} <strong>${upper(blank(t.staffName))}</strong>; Designation <strong>${blank(t.designation)}</strong> of <strong>${blank(proper(t.schoolName))}</strong> to be retired on superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong> (a.n.)[cite: 3]</p>
       
       <p>Certified that -[cite: 3]</p>
       <ol class="items">
-        <li>He/She will draw Basic pay @ Rs. ${inr(t.lastBasicPay)}/- per month on the date of superannuation and total amt. of pay reckonable for pension and Gratuity is Rs. ${inr(c.pensionBasic)} &amp; Rs. ${inr(c.gratuityAmount)}.[cite: 3]</li>
-        <li>The service rendered by him/her during the period from <strong>${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))}</strong> (Dt. Of issue of PC) To <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong> (Dt. of Retirement) qualifies for pension and Gratuity.[cite: 3]</li>
-        <li>No court case/ Departmental proceedings is pending against him/her.[cite: 3]</li>
-        <li>He/She has no liability which is yet to be recovered from his/her retirement benefit except those which have been mentioned in his/her pay certificate. Following amount have to be recovered from the Gratuity and pension Relief in addition to the amount mentioned in his pay certificate.[cite: 3]<br>
+        <li>${heShe(g)} will draw Basic pay @ Rs. ${inr(t.lastBasicPay)}/- per month on the date of superannuation and total amt. of pay reckonable for pension and Gratuity is Rs. ${inr(c.pensionBasic)} &amp; Rs. ${inr(c.gratuityAmount)}.[cite: 3]</li>
+        <li>The service rendered by ${himHer(g)} during the period from <strong>${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))}</strong> (Dt. Of issue of PC) To <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong> (Dt. of Retirement) qualifies for pension and Gratuity.[cite: 3]</li>
+        <li>No court case/ Departmental proceedings is pending against ${himHer(g)}.[cite: 3]</li>
+        <li>${heShe(g)} has no liability which is yet to be recovered from ${hisHer(g)} retirement benefit except those which have been mentioned in ${hisHer(g)} pay certificate. Following amount have to be recovered from the Gratuity and pension Relief in addition to the amount mentioned in ${hisHer(g)} pay certificate.[cite: 3]<br>
           <div style="margin: 5px 0; padding-left: 15px;">
             1. ______________________ for ______________________[cite: 3]<br>
             2. ______________________ for ______________________[cite: 3]<br>
             3. ______________________ for ______________________[cite: 3]
           </div>
         </li>
-        <li>No Provisional pension and No Provisional Gratuity have been sanctioned to him/her. Provisional Gratuity of Rs. ______________________ and Provisional pension @ Rs. ______________________ .p.m. for the period from ______________________ To ______________________ have been sanctioned and paid to him/her.[cite: 3]</li>
+        <li>No Provisional pension and No Provisional Gratuity have been sanctioned to ${himHer(g)}. Provisional Gratuity of Rs. ______________________ and Provisional pension @ Rs. ______________________ .p.m. for the period from ______________________ To ______________________ have been sanctioned and paid to ${himHer(g)}.[cite: 3]</li>
         <li>Following amount have been mentioned in the pay certificate as to be recovered from the pensionary benefits.[cite: 3]<br>
           <div style="margin: 5px 0; padding-left: 15px;">
             i. Rs ______________________ for ______________________[cite: 3]<br>
@@ -941,7 +944,7 @@ function docNOLIA(t,c){
           </div>
         </li>
       </ol>
-      <p>His/Her pensionary benefits may be released accordingly.[cite: 3]</p>
+      <p>${HisHer(g)} pensionary benefits may be released accordingly.[cite: 3]</p>
       
       <div style="display:flex; justify-content:space-between; margin-top:25px;">
         <div>Date:- _____________________</div>
@@ -954,20 +957,21 @@ function docNOLIA(t,c){
 }
 
 function docPAYC(t,c){
+  const g=t.gender;
   return pageWrap(`
     <div style="font-family:'Times New Roman', Times, serif;">
       <p class="small center">(To be filled in by the Head of the Institution /Administrator/Secretary / Sub Inspector-Circle)[cite: 4]</p>
       <h2 class="doc-title" style="margin-top:2px;">PAY CERTIFICATE[cite: 4]</h2>
       <p class="center small"><strong>(For Retirement / Death Case only)[cite: 4]</strong></p>
       
-      <p style="margin-top:15px;">Pay certificate of Shri/Smt. <strong>${upper(blank(t.staffName))}</strong> Designation <strong>${blank(t.designation)}</strong> of <strong>${blank(proper(t.schoolName))}</strong> (Name of the Institution) for the purpose of Pension / Gratuity / Family Pension.[cite: 4]</p>
+      <p style="margin-top:15px;">Pay certificate of ${g==="MALE"?"Shri":"Smt."} <strong>${upper(blank(t.staffName))}</strong> Designation <strong>${blank(t.designation)}</strong> of <strong>${blank(proper(t.schoolName))}</strong> (Name of the Institution) for the purpose of Pension / Gratuity / Family Pension.[cite: 4]</p>
       
       <p><strong>PAY</strong>[cite: 4]</p>
       <div style="padding-left:10px; line-height:1.6;">
-        <div>1. (a) The Basic pay of Shri/Smt. <strong>${upper(blank(t.staffName))}</strong> as on ________________ is/was Rs. <strong>${inr(t.lastButBasicPay)}</strong> p.m. in the scale of pay of Rs. <strong>${blank(c.payLevel)}</strong>[cite: 4]</div>
-        <div>(b). His / Her last increment before retirement in the aforesaid scale is due on <strong>${blank(fmtDate(t.lastIncrementDate,"dd-mm-yyyy"))}</strong> which will raise his/her pay to Rs. <strong>${inr(t.lastBasicPay)}</strong> p.m. up to the date of his/her Superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong>[cite: 4]</div>
-        <div>(c) He/She draws a Special Pay of Rs. <strong>NIL</strong> in addition to his / her Basic Pay in the aforesaid scale,[cite: 4]</div>
-        <div>(d) He/She draws the following elements viz.[cite: 4]</div>
+        <div>1. (a) The Basic pay of ${g==="MALE"?"Shri":"Smt."} <strong>${upper(blank(t.staffName))}</strong> as on ________________ is/was Rs. <strong>${inr(t.lastButBasicPay)}</strong> p.m. in the scale of pay of Rs. <strong>${blank(c.payLevel)}</strong>[cite: 4]</div>
+        <div>(b). ${HisHer(g)} last increment before retirement in the aforesaid scale is due on <strong>${blank(fmtDate(t.lastIncrementDate,"dd-mm-yyyy"))}</strong> which will raise ${hisHer(g)} pay to Rs. <strong>${inr(t.lastBasicPay)}</strong> p.m. up to the date of ${hisHer(g)} Superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong>[cite: 4]</div>
+        <div>(c) ${heShe(g)} draws a Special Pay of Rs. <strong>NIL</strong> in addition to ${hisHer(g)} Basic Pay in the aforesaid scale,[cite: 4]</div>
+        <div>(d) ${heShe(g)} draws the following elements viz.[cite: 4]</div>
         <div style="padding-left:20px;">
           (i) D.A. - Rs. <strong>${inr(Math.round((Number(t.lastBasicPay)||0)*(Number(t.daPercent)||0)/100))}</strong> @ ${blank(t.daPercent)}%[cite: 4]<br>
           (ii) HRA - Rs. <strong>${inr(c.hraAmount)}</strong>[cite: 4]<br>
@@ -1032,8 +1036,8 @@ function docFLP(t,c){
 function docFLCHO(t,c){
   const g=t.gender;
   const mainPara = c.isResignation ?
-    `I / we would like to inform you that ${proper(t.staffName)}; Ex-${proper(t.designation)} resigned from the post of ${proper(t.designation)} on the afternoon of ${blank(fmtDate(t.chargeHandOverDate,"dd-mm-yyyy"))}, and his / her resignation from the post of ${proper(t.designation)} has been approved and accepted in M.C.R. / Administrator Order No. ______ &amp; Dated ______, w.e.f. ${fmtD(c.chargeExecDatePlus1,"dd-mm-yyyy")}. From that date ${proper(t.staffName)} will act as ${blank(t.chargeHandOverToPost)} of this school.` :
-    `I / we would like to inform you that ${proper(t.staffName)}; ${new Date()>c.dor ? `Ex-${proper(t.designation)} retired` : `will retire from the post of ${proper(t.designation)}`} from his / her service upon reaching superannuation on the afternoon of ${c.dor?fmtDate(c.dorStr,"dd-mmm-yyyy"):""}. It also may be noted that effective ${fmtD(c.dorPlus1,"mmmm d,yyyy")}, ${blank(proper(t.chargeHandOverToName))}; ${blank(t.chargeHandOverToPost)} will assume / has assumed the role of ${blank(t.chargeHandOverToPost)} of this school.`;
+    `I / we would like to inform you that ${proper(t.staffName)}; Ex-${proper(t.designation)} resigned from the post of ${proper(t.designation)} on the afternoon of ${blank(fmtDate(t.chargeHandOverDate,"dd-mm-yyyy"))}, and ${hisHer(g)} resignation from the post of ${proper(t.designation)} has been approved and accepted in M.C.R. / Administrator Order No. ______ &amp; Dated ______, w.e.f. ${fmtD(c.chargeExecDatePlus1,"dd-mm-yyyy")}. From that date ${proper(t.staffName)} will act as ${blank(t.chargeHandOverToPost)} of this school.` :
+    `I / we would like to inform you that ${proper(t.staffName)}; ${new Date()>c.dor ? `Ex-${proper(t.designation)} retired` : `will retire from the post of ${proper(t.designation)}`} from ${hisHer(g)} service upon reaching superannuation on the afternoon of ${c.dor?fmtDate(c.dorStr,"dd-mmm-yyyy"):""}. It also may be noted that effective ${fmtD(c.dorPlus1,"mmmm d,yyyy")}, ${blank(proper(t.chargeHandOverToName))}; ${blank(t.chargeHandOverToPost)} will assume / has assumed the role of ${blank(t.chargeHandOverToPost)} of this school.`;
   return pageWrap(`
     <p><strong>To</strong><br>The District Inspector of Schools (S.E.), Bankura.<br>Post &amp; District, Bankura.</p>
     <p><strong>Subject:</strong> Charge Hand Over / Take Over Request in e-Pension Portal.</p>
@@ -1132,6 +1136,7 @@ function docNOLIACERT(t,c){
 }
 
 function docRESC(t,c){
+  const g = t.gender;
   const eventDate = c.isResignation ? c.chargeExecDate : c.dor;
   return pageWrap(`
     ${letterhead(t)}
@@ -1141,11 +1146,11 @@ function docRESC(t,c){
     </ol>
     <p>After proper physical verification of related school documents, it is observed that -</p>
     <ol class="items" type="i">
-      <li>the existing ${proper(t.designation)}; ${proper(t.staffName)} of this school has no liabilities either in cash or kind with the school, A.I./S(S.E.), ${proper(t.schoolSubDiv)} or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F. which is yet to be recovered from his / her Gratuity &amp; Pension Relief in addition to the amount mentioned in his / her pay certificate.[cite: 3]</li>
-      <li>No Court Case / Departmental Proceeding is pending against him / her.[cite: 3]</li>
+      <li>the existing ${proper(t.designation)}; ${proper(t.staffName)} of this school has no liabilities either in cash or kind with the school, A.I./S(S.E.), ${proper(t.schoolSubDiv)} or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F. which is yet to be recovered from ${hisHer(g)} Gratuity &amp; Pension Relief in addition to the amount mentioned in ${hisHer(g)} pay certificate.[cite: 3]</li>
+      <li>No Court Case / Departmental Proceeding is pending against ${himHer(g)}.[cite: 3]</li>
       <li>No Provisional Pension has been sanctioned to the employee.[cite: 3]</li>
       <li>No Provisional Gratuity has been sanctioned to the employee.[cite: 3]</li>
-      <li>It also may be noted that he / she rendered service acceptably in this school to the post of ${proper(t.designation)} for the period from ${blank(fmtDate(t.dojThisSchool,"dd-mm-yyyy"))} to till date, and no Utilization Certificate on different grants sanctioned in favour of this school by SSM and other departments is pending for submission after utilization during his / her service period. Cash Books, all Ledgers, Pass Book, various record books, service books, etc. are kept in proper order and up-to-date. Assets as per Stock Register agree with physical verification. Presently no litigation is found about any matter in this school.</li>
+      <li>It also may be noted that ${heshe(g)} rendered service acceptably in this school to the post of ${proper(t.designation)} for the period from ${blank(fmtDate(t.dojThisSchool,"dd-mm-yyyy"))} to till date, and no Utilization Certificate on different grants sanctioned in favour of this school by SSM and other departments is pending for submission after utilization during ${hisHer(g)} service period. Cash Books, all Ledgers, Pass Book, various record books, service books, etc. are kept in proper order and up-to-date. Assets as per Stock Register agree with physical verification. Presently no litigation is found about any matter in this school.</li>
       <li>Mid-Day-Meal is running smoothly in this school. Stock (CB) of Rice on this date as per record &amp; physical verification: ______________ kg.</li>
       <li>Details of Closing Balance in various bank account(s):
         <table><tr><th>Sl</th><th>Bank A/C No.</th><th>Bank &amp; Branch Name</th><th>Closing Balance (Rs.)</th><th>Purpose of A/C</th></tr>
@@ -1164,6 +1169,7 @@ function docRESC(t,c){
 }
 
 function docCHO(t,c){
+  const g = t.gender;
   const eventDate = c.isResignation ? c.chargeExecDate : c.dor;
   const eventDatePlus1 = c.isResignation ? c.chargeExecDatePlus1 : c.dorPlus1;
   const fmt = d => fmtD(d,"dd-mm-yyyy");
@@ -1175,7 +1181,7 @@ function docCHO(t,c){
     <div class="sig-line">${blank(proper(t.staffName))}<br>${blank(t.designation)} ${c.isResignation?`[To be resigned on ${fmt(eventDatePlus1)}]`:`[To be retired on the afternoon of ${fmt(eventDate)}]`}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</div>
     <hr style="margin:10mm 0;border:none;border-top:1px dashed #999;">
     <h2 class="doc-title">Charge Take Over</h2>
-    <p>I, ${blank(proper(t.chargeHandOverToName))}, incoming ${blank(t.chargeHandOverToPost)} w.e.f. ${fmt(eventDatePlus1)} of ${proper(t.schoolName)}, herewith take over the charges and all accounts of this school from the outgoing ${proper(t.designation)}, ${proper(t.staffName)} of ${proper(t.schoolName)} on account of his / her ${blank(t.chargeHandOverCause)} on ${fmt(eventDate)} [a.n.].</p>
+    <p>I, ${blank(proper(t.chargeHandOverToName))}, incoming ${blank(t.chargeHandOverToPost)} w.e.f. ${fmt(eventDatePlus1)} of ${proper(t.schoolName)}, herewith take over the charges and all accounts of this school from the outgoing ${proper(t.designation)}, ${proper(t.staffName)} of ${proper(t.schoolName)} on account of ${hisHer(g)} ${blank(t.chargeHandOverCause)} on ${fmt(eventDate)} [a.n.].</p>
     <p style="margin-top:8mm;">Date: ______________ &nbsp;&nbsp;&nbsp;&nbsp; Place: ______________</p>
     <div class="sig-line">${blank(t.chargeHandOverToPost)} [w.e.f. ${fmt(eventDatePlus1)}]<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</div>
     <p style="margin-top:10mm;text-align:center;letter-spacing:3px;">C O U N T E R S I G N E D</p>
@@ -1184,13 +1190,14 @@ function docCHO(t,c){
 }
 
 function docCPC(t,c){
+  const g = t.gender;
   return pageWrap(`
     ${letterhead(t)}
     <h2 class="doc-title">To Whom It May Concern</h2>
     <h3 class="doc-sub">Certificate regarding No Liability re: Submission of U.C. on different grants sanctioned by SSM in favour of ${blank(proper(t.schoolName))} till ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""}</h3>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
     <p><strong>Certified that -</strong></p>
-    <p>${proper(t.staffName)}; Ex-${proper(t.designation)} [duly retired from his / her service due to superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} (a.n.)] has no liabilities in connection with the submission of Utilization Certificate on different grants sanctioned by SSM in favour of this school i.e. ${proper(t.schoolName)}, and for such grants after utilization no Utilization Certificate is pending for submission during his / her service period, i.e. till ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""}.</p>
+    <p>${proper(t.staffName)}; Ex-${proper(t.designation)} [duly retired from ${hisHer(g)} service due to superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} (a.n.)] has no liabilities in connection with the submission of Utilization Certificate on different grants sanctioned by SSM in favour of this school i.e. ${proper(t.schoolName)}, and for such grants after utilization no Utilization Certificate is pending for submission during ${hisHer(g)} service period, i.e. till ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""}.</p>
     <div class="sig-line" style="margin-top:16mm;">Signature of the ${blank(upper(hoiSignatory(t)))}</div>
   `);
 }
