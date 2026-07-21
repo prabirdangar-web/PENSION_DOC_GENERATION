@@ -1,540 +1,1733 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pension Document Generator</title>
-  <style>
-    /* =========================================================================
-       BASE & LAYOUT STYLES
-       ========================================================================= */
-    :root {
-      --primary: #1e3a8a;
-      --primary-hover: #1e40af;
-      --bg-gray: #f3f4f6;
-      --border-color: #d1d5db;
-      --text-main: #1f2937;
-      --sidebar-width: 320px;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pension Application &amp; Certificate Generator</title>
+<style>
+  :root{
+    --navy:#1b3a5c; --navy-dark:#122840; --gold:#a9772f; --paper:#fdfcf9;
+    --line:#c7ccd1; --ink:#1c1c1c; --muted:#5b6570; --accent-bg:#eef3f7;
+    --ok:#2e7d4f; --danger:#a4322a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:#e9ecef;color:var(--ink);}
+  .app{display:flex;min-height:100vh;}
+  
+  /* ---------- Sidebar ---------- */
+  .sidebar{width:280px;flex:0 0 280px;background:var(--navy-dark);color:#fff;padding:18px 14px;display:flex;flex-direction:column;gap:14px;}
+  .sidebar h1{font-size:16px;margin:0 0 2px;letter-spacing:.3px;}
+  .sidebar .sub{font-size:11px;color:#9fb3c8;margin-bottom:6px;}
+  .btn{cursor:pointer;border:none;border-radius:6px;padding:9px 12px;font-size:13px;font-weight:600;transition:.15s;}
+  .btn-primary{background:var(--gold);color:#fff;}
+  .btn-primary:hover{background:#8f611f;}
+  .btn-ghost{background:transparent;color:#dce6ef;border:1px solid #3a5675;}
+  .btn-ghost:hover{background:#20405f;}
+  .btn-danger{background:transparent;color:#f2a29a;border:1px solid #6b3630;}
+  .btn-danger:hover{background:#4a2320;}
+  .btn-block{width:100%;}
+  .rec-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+  .rec-item{background:#20405f;border-radius:6px;padding:9px 10px;cursor:pointer;font-size:12.5px;border:1px solid transparent;}
+  .rec-item:hover{border-color:var(--gold);}
+  .rec-item.active{background:var(--gold);color:#fff;}
+  .rec-item .nm{font-weight:600;display:block;}
+  .rec-item .meta{font-size:10.5px;opacity:.8;}
+  .search-box{width:100%;padding:8px 9px;border-radius:6px;border:1px solid #3a5675;background:#0f2438;color:#fff;font-size:12.5px;}
+  .search-box::placeholder{color:#7d93a8;}
+  .side-foot{font-size:10.5px;color:#7d93a8;line-height:1.5;border-top:1px solid #2c4a68;padding-top:10px;}
+  
+  /* ---------- Main ---------- */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .topbar{background:#fff;border-bottom:1px solid var(--line);padding:10px 22px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20;}
+  .topbar .title{font-weight:700;color:var(--navy);font-size:15px;flex:1;}
+  .tabs{display:flex;gap:6px;background:#fff;border-bottom:1px solid var(--line);padding:0 22px;overflow-x:auto;}
+  .tab{padding:10px 14px;font-size:13px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;font-weight:600;}
+  .tab.active{color:var(--navy);border-color:var(--gold);}
+  .content{flex:1;padding:22px;overflow-y:auto;}
+  .status{font-size:12px;padding:6px 10px;border-radius:5px;}
+  .status.ok{background:#e2f3e8;color:var(--ok);}
+  .status.err{background:#fbe6e4;color:var(--danger);}
+  
+  /* ---------- Form ---------- */
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px 18px;}
+  fieldset{border:1px solid var(--line);border-radius:8px;padding:14px 16px 16px;margin:0 0 18px;background:#fff;}
+  legend{font-size:13px;font-weight:700;color:var(--navy);padding:0 6px;}
+  label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;font-weight:600;}
+  .field{margin-bottom:0;}
+  input[type=text],input[type=number],input[type=date],select,textarea{
+    width:100%;padding:7px 8px;border:1px solid #c9cfd6;border-radius:5px;font-size:13px;font-family:inherit;background:#fff;color:var(--ink);
+  }
+  textarea{resize:vertical;min-height:44px;}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:0;border-color:var(--gold);}
+  .hint{font-size:10.5px;color:#8a93a0;margin-top:2px;}
+  .form-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 22px;display:flex;gap:10px;justify-content:flex-end;}
+  
+  /* ---------- Summary ---------- */
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+  .sum-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
+  .sum-card .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .sum-card .val{font-size:18px;font-weight:700;color:var(--navy);margin-top:3px;}
+  
+  /* ---------- Documents list + preview Layout ---------- */
+  .doc-layout{display:flex;gap:18px;align-items:flex-start;width:100%;}
+  .doc-list{width:260px;flex:0 0 260px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;}
+  .doc-btn{text-align:left;background:#fff;border:1px solid var(--line);border-radius:7px;padding:9px 11px;font-size:12.5px;cursor:pointer;font-weight:600;color:var(--navy);width:100%;}
+  .doc-btn small{display:block;font-weight:400;color:var(--muted);font-size:10.5px;margin-top:2px;}
+  .doc-btn.active{border-color:var(--gold);background:#fff7ec;}
+  .doc-preview-wrap{flex:1;min-width: 0;overflow-x:auto;background:#525659;padding:20px;border-radius:8px;border:1px solid var(--line);}
+  .preview-toolbar{display:flex;gap:8px;margin-bottom:15px;}
+  .print-area { display: block !important; width: 100%; }
+
+  /* ---------- Printable page (A4 Strict Layout Controls) ---------- */
+  @page { size: portrait; margin: 15mm; }
+  @page landscape-page-setting { size: landscape; margin: 10mm; }
+
+  .page{background:var(--paper);width:210mm;min-height:296mm;margin:0 auto;padding:16mm 16mm 14mm;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:"Times New Roman",Georgia,serif;font-size:11.5pt;line-height:1.45;color:#111;position:relative;}
+  
+  /* Landscape Document Overrides for Enclosure D & E */
+  .page.landscape-layout {
+    width: 297mm !important;
+    min-height: 210mm !important;
+    page: landscape-page-setting !important;
+  }
+  
+  /* Poster Size Half-A4 Setup for Cover Page Label */
+  .page.cover-poster-layout {
+    width: 210mm !important;
+    min-height: 148mm !important;
+    height: 148mm !important;
+    overflow: hidden;
+    border: 3px double var(--navy);
+    padding: 10mm !important;
+    background: #fffdf9;
+  }
+
+  .page h2.doc-title{text-align:center;font-size:14pt;font-weight:bold;margin:2mm 0 4mm;letter-spacing:.4px;text-transform:uppercase;}
+  .page h3.doc-sub{text-align:center;font-size:11pt;margin:-3mm 0 5mm;font-weight:bold;}
+  .page .ref-line{font-size:10.5pt;margin-bottom:4mm;}
+  .page p{margin:0 0 3mm;text-align:justify;}
+  .page .letterhead{text-align:center;margin-bottom:4mm;border-bottom:2px solid var(--navy);padding-bottom:3mm;}
+  .page .letterhead .sc{font-size:14pt;font-weight:bold;color:var(--navy);}
+  .page .letterhead .ad{font-size:10pt;color:#333;}
+  .page .to-block{margin-bottom:4mm;}
+  .page table{width:100%;border-collapse:collapse;margin:3mm 0;font-size:10pt;}
+  .page table td, .page table th{border:1px solid #111;padding:4px 6px;vertical-align:top;}
+  .page table th{background-color:#f2f2f2;font-weight:bold;text-align:center;}
+  .page ol.items{padding-left:18px;margin:0 0 3mm;}
+  .page ol.items li{margin-bottom:2.5mm;text-align:justify;}
+  .page .blank{border-bottom:1px solid #333;display:inline-block;min-width:60px;}
+  .page .encl{font-size:11pt;}
+  .page .small{font-size:10pt;color:#333;}
+  .page .center{text-align:center;}
+  .page .right{text-align:right;}
+  
+  /* Signature alignment helpers */
+  .page .sig-block-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: 10mm;
+  }
+  .page .sig-box {
+    text-align: center;
+    width: 75mm;
+  }
+  .page .sig-line {
+    margin-top: 12mm;
+    border-top: 1px solid #222;
+    padding-top: 2mm;
+    font-size: 10.5pt;
+    text-align: center;
+  }
+  .page .field-empty{color:#b33;font-style:italic;}
+  
+  .pension-table th { font-size: 8.5pt; line-height: 1.2; padding: 4px 2px; text-align: center; font-weight: bold; }
+  .pension-table td { font-size: 9pt; padding: 5px 4px; }
+  
+  /* ---------- Mobile friendliness ---------- */
+  .sidebar-toggle{display:none;}
+  @media (max-width: 860px){
+    .app{flex-direction:column;}
+    .sidebar{width:100%;flex:0 0 auto;max-height:0;overflow:hidden;padding:0 14px;transition:max-height .2s ease, padding .2s ease;}
+    .sidebar.open{max-height:70vh;overflow-y:auto;padding:14px;}
+    .sidebar-toggle{display:flex;align-items:center;gap:6px;}
+    .content{padding:14px;}
+    .form-grid{grid-template-columns:1fr;}
+    .doc-layout{flex-direction:column;}
+    .doc-list{width:100%;flex:0 0 auto;position:static;flex-direction:row;flex-wrap:wrap;}
+    .doc-btn{flex:1 1 auto;min-width:140px;}
+    .page{width:100%;max-width:210mm;transform-origin:top left;padding:10mm;font-size:11.5pt;}
+    .page.landscape-layout { width:100% !important; min-height:auto !important; }
+  }
+
+  /* ---------- Standardized Print Engine ---------- */
+  @media print{
+    html, body {
+      height: auto !important;
+      overflow: visible !important;
+      background: #fff !important;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); background: var(--bg-gray); display: flex; height: 100vh; overflow: hidden; }
-
-    /* Sidebar */
-    .sidebar { width: var(--sidebar-width); background: #ffffff; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; transition: margin-left 0.3s ease; }
-    .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border-color); background: #f8fafc; }
-    .sidebar-header h2 { font-size: 1.1rem; color: var(--primary); margin-bottom: 10px; }
-    .search-box { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; }
-    .record-list { flex: 1; overflow-y: auto; padding: 10px; }
-    .record-item { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 8px; cursor: pointer; background: #fff; transition: all 0.2s; }
-    .record-item:hover { background: #eff6ff; border-color: #93c5fd; }
-    .record-item.active { background: #dbeafe; border-color: var(--primary); }
-    .record-item .name { font-weight: 600; font-size: 0.95rem; }
-    .record-item .sub { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
-
-    /* Main Container */
-    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
-    
-    /* Top Toolbar & Tabs */
-    .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid var(--border-color); }
-    .actions { display: flex; gap: 8px; }
-    .btn { padding: 8px 14px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: inline-flex; align-items: center; gap: 5px; transition: background 0.2s; }
-    .btn:hover { background: #f1f5f9; }
-    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
-    .btn-danger:hover { background: #dc2626; }
-
-    .tabs-bar { display: flex; background: #f1f5f9; border-bottom: 1px solid var(--border-color); padding: 0 15px; }
-    .tab { padding: 12px 18px; cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; font-size: 0.9rem; color: #64748b; }
-    .tab:hover { color: var(--primary); }
-    .tab.active { border-bottom-color: var(--primary); color: var(--primary); background: #fff; }
-
-    /* Content Area */
-    .content-area { flex: 1; overflow-y: auto; padding: 25px; }
-
-    /* Form Styles */
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; max-width: 900px; }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    .form-group.full { grid-column: 1 / -1; }
-    .form-group label { font-size: 0.85rem; font-weight: 600; color: #374151; }
-    .form-control { padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; }
-    .form-control:focus { outline: none; border-color: var(--primary); ring: 2px solid #bfdbfe; }
-    .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; font-weight: normal; }
-
-    /* Document Output Styles */
-    .doc-container { max-width: 800px; margin: 0 auto; background: #fff; padding: 40px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-    .doc-page { line-height: 1.8; font-size: 15px; color: #000; }
-    .doc-page h2, .doc-page h3 { text-align: center; margin-bottom: 15px; }
-    .status { padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; margin-top: 5px; }
-    .status.ok { background: #dcfce7; color: #15803d; }
-    .status.err { background: #fee2e2; color: #b91c1c; }
-
-    /* Print Formatting */
-    @media print {
-      body { background: #fff; }
-      .sidebar, .toolbar, .tabs-bar { display: none !important; }
-      .main-content, .content-area { overflow: visible !important; padding: 0 !important; }
-      .doc-container { border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+    .sidebar, .topbar, .tabs, .doc-list, .preview-toolbar, #formActions, fieldset, .summary-grid { 
+      display: none !important; 
     }
-  </style>
+    .app, .main, .content, .doc-layout, .doc-preview-wrap, .print-area { 
+      display: block !important; 
+      position: static !important;
+      overflow: visible !important;
+      width: 100% !important; 
+      margin: 0 !important; 
+      padding: 0 !important; 
+      min-height: auto !important; 
+      background: transparent !important; 
+      box-shadow: none !important; 
+    }
+    .page { 
+      box-shadow: none !important; 
+      margin: 0 auto !important; 
+      page-break-after: always !important; 
+      visibility: visible !important; 
+      display: block !important;
+    }
+    .page.landscape-layout {
+      page: landscape-page-setting !important;
+    }
+    .page * { 
+      visibility: visible !important; 
+    }
+    .page:last-child { 
+      page-break-after: auto !important; 
+    }
+  }
+</style>
 </head>
 <body>
+<div class="app">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <h2>Pension Records</h2>
-      <input type="text" id="searchBox" class="search-box" placeholder="Search employee name...">
-      <div id="sideStatus"></div>
+  <div class="sidebar">
+    <div>
+      <h1>Pension Portal</h1>
+      <div class="sub">e-Pension Application &amp; Certificate Generator</div>
     </div>
-    <div class="record-list" id="recordList"></div>
-  </aside>
+    <button class="btn btn-primary btn-block" id="btnNew">+ New Pensioner Record</button>
+    <input class="search-box" id="searchBox" placeholder="Search saved records...">
+    <div class="rec-list" id="recList"></div>
+    <div id="sideStatus"></div>
+    <div class="side-foot">Data is stored privately for your account and stays available across sessions. Nothing is shared with other users.</div>
+  </div>
 
-  <!-- MAIN CONTENT AREA -->
-  <main class="main-content">
-    <!-- TOOLBAR -->
-    <div class="toolbar">
-      <button class="btn" id="btnToggleSidebar">☰ Menu</button>
-      <div class="actions">
-        <button class="btn" id="btnNew">+ New Record</button>
-        <button class="btn btn-primary" id="btnSave">Save Record</button>
-        <button class="btn" id="btnDuplicate">Duplicate</button>
-        <button class="btn" id="btnResetForm">Undo Changes</button>
-        <button class="btn btn-danger" id="btnDelete">Delete</button>
-        <button class="btn" id="btnPrintOne">🖨️ Print Document</button>
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <button class="btn btn-ghost sidebar-toggle" id="btnToggleSidebar">☰ Records</button>
+      <div class="title" id="topTitle">New Pensioner Record</div>
+      <button class="btn btn-ghost" id="btnDuplicate" style="display:none;">Duplicate as New</button>
+      <button class="btn btn-danger" id="btnDelete" style="display:none;">Delete Record</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-tab="form">1. Enter Data</div>
+      <div class="tab" data-tab="summary">2. Computed Summary</div>
+      <div class="tab" data-tab="docs">3. Documents / Print</div>
+    </div>
+    <div class="content" id="content"></div>
+    <div class="form-actions" id="formActions" style="display:none;">
+      <span id="saveStatus" style="align-self:center;font-size:12px;color:var(--muted);"></span>
+      <button class="btn btn-ghost" id="btnResetForm">Undo Changes</button>
+      <button class="btn btn-primary" id="btnSave">Save Record</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================================
+   FIELD SCHEMA
+   ========================================================================= */
+const DESIGNATIONS = ["ASSISTANT TEACHER","CLERK","GR-D STAFF","HEADMASTER","HEADMISTRESS","AHM","LIBRARIAN","TEACHER-IN-CHARGE"];
+const GRADE_PAYS = [
+  {gp:1700, level:"LEVEL-1-PB-1:4900-16200-GP-RS-1700"},
+  {gp:1800, level:"LEVEL-2-PB-1:4900-16200-GP-RS-1800"},
+  {gp:2600, level:"LEVEL-6-PB-2-5400-25200- GP-RS-2600"},
+  {gp:2900, level:"LEVEL-7-PB-2-.5400-25200- GP-RS-2900"},
+  {gp:3900, level:"LEVEL-10-PB-3-7100-37600-GP-RS-3900"},
+  {gp:4100, level:"LEVEL-11-PB-3-7100-37600-GP-RS-4100"},
+  {gp:4400, level:"LEVEL-12-PB-4-9000-40500-GP-RS-4400"},
+  {gp:4700, level:"LEVEL-14-PB-4-9000-40500-GP-RS-4700"},
+  {gp:4800, level:"LEVEL-15-PB-4-9000-40500-GP-RS-4800"},
+  {gp:5400, level:"LEVEL-16-PB-4-9000-40500-GP-RS-5400"}
+];
+const ADMIN_STATUSES = ["President [M.C.]","Member Secretary [Ad-hoc Committee]","Administrator","Secretary [M.C.]"];
+const CHARGE_CAUSES = ["Superannuation Retirement From Service","Resignation from the Post of Teacher-In-Charge / H.M.","Others"];
+
+const SECTIONS = [
+{
+  title:"School Information &amp; Dashboard Controls",
+  fields:[
+    {id:"schoolName", label:"School Name", type:"text"},
+    {id:"schoolAddress", label:"School Address", type:"textarea"},
+    {id:"schoolSubDiv", label:"Sub-Division", type:"select", options:["KHATRA","BANKURA","BISHNUPUR"]},
+    {id:"schoolRecognisedDate", label:"School Recognised W.E.F.", type:"date"},
+    {id:"schoolMail", label:"School e-Mail ID", type:"text"},
+    {id:"hoiMobile", label:"HOI Mobile No.", type:"text"},
+    {id:"currentUserId", label:"Current User ID (School, e-Pension)", type:"text"},
+    {id:"diseCode", label:"DISE / UDISE Code of School", type:"text"},
+    {id:"treasury", label:"Treasury", type:"text"},
+    {id:"hoiStatus", label:"Present HOI Status", type:"select", options:DESIGNATIONS},
+    {id:"adminStatus", label:"Administrative Status (M.C. post)", type:"select", options:ADMIN_STATUSES}
+  ]
+},
+{
+  title:"Employee Details",
+  fields:[
+    {id:"staffName", label:"Name of the Staff", type:"text"},
+    {id:"gender", label:"Sex", type:"select", options:["MALE","FEMALE"]},
+    {id:"designation", label:"Designation", type:"select", options:DESIGNATIONS},
+    {id:"employeeCode", label:"Employee Code", type:"text"},
+    {id:"applicationId", label:"Application ID", type:"text"},
+    {id:"employeeMobile", label:"Employee Mobile No.", type:"text"},
+    {id:"dob", label:"Date of Birth", type:"date"},
+    {id:"lastGradePay", label:"Last Grade Pay", type:"select", options:GRADE_PAYS.map(g=>String(g.gp))}
+  ]
+},
+{
+  title:"Service History",
+  fields:[
+    {id:"prevSchool1", label:"Previous School - 1 (earliest)", type:"text"},
+    {id:"prevSchool2", label:"Previous School - 2 (if any)", type:"text"},
+    {id:"dojFirst", label:"Date of First Joining (Service)", type:"date", hint:"Start of service at Previous School-1. If there was no previous school at all, set this equal to 'DOJ in this School'."},
+    {id:"dojPrevSchool2", label:"Date of Joining Previous School-2", type:"date", hint:"Leave equal to 'DOJ in this School' if there was only ONE previous school. Leave blank/same as first-joining if there was NO previous school."},
+    {id:"dojThisSchool", label:"DOJ in this (current) School", type:"date"},
+    {id:"prevSchoolPost1", label:"Post Held at Previous School - 1", type:"select", options:DESIGNATIONS},
+    {id:"prevSchoolPost2", label:"Post Held at Previous School - 2", type:"select", options:DESIGNATIONS},
+    {id:"medicalLeave", label:"Medical Leave Enjoyed (days)", type:"text"},
+    {id:"halfPayLeave", label:"Half Pay Leave (days)", type:"text"},
+    {id:"extraOrdinaryLeave", label:"Extra Ordinary Leave (days)", type:"text"},
+    {id:"specialLeave", label:"Special Leave (days)", type:"text"},
+    {id:"hraOverdrawn", label:"HRA / Salary Overdrawn, if any (Rs.)", type:"number"},
+    {id:"challanNoDate", label:"Challan No. &amp; Date (if refunded)", type:"text"}
+  ]
+},
+{
+  title:"Pay &amp; Pension Inputs",
+  fields:[
+    {id:"lastBasicPay", label:"Last (Final) Basic Pay (Rs.)", type:"number", hint:"The final basic pay used for pension/gratuity — i.e. AFTER the last applicable 1st-July increment, if any."},
+    {id:"lastButBasicPay", label:"Basic Pay Before Last Increment (Rs.)", type:"number", hint:"The basic pay as currently drawn, BEFORE the 1st-July increment referenced below. Same as Last Basic Pay if no further increment falls due before retirement."},
+    {id:"lastIncrementDate", label:"Date of Last/Next 1st-July Increment", type:"date", hint:"Leave blank or equal to the increment-before date if no increment falls due before the date of retirement."},
+    {id:"daPercent", label:"D.A. @ (%)", type:"number"},
+    {id:"hraMode", label:"HRA Type", type:"select", options:["PERCENT","FIXED"], hint:"Choose PERCENT to enter a rate below, or FIXED to enter a flat amount."},
+    {id:"hraPercentValue", label:"HRA Rate (%), if PERCENT", type:"number", hint:"e.g. 12 or 15 — only used when HRA Type is PERCENT."},
+    {id:"hraFixedAmount", label:"Fixed HRA Amount (Rs.), if FIXED", type:"number", hint:"e.g. 3600 — only used when HRA Type is FIXED. Enter your school's actual fixed HRA."},
+    {id:"commutationPercent", label:"Commutation (%) e.g. 0.4 = 40%", type:"number"},
+    {id:"ppoNo", label:"PPO No.", type:"text"},
+    {id:"ppoMemo", label:"PPO Memo No. &amp; Date", type:"text"},
+    {id:"pfGross", label:"PF Gross (Rs.)", type:"number"}
+  ]
+},
+{
+  title:"Spouse Details",
+  fields:[
+    {id:"spouseName", label:"Spouse Name", type:"text"},
+    {id:"spouseRelation", label:"Spouse Relation", type:"select", options:["WIFE","HUSBAND"]},
+    {id:"spouseStatus", label:"Spouse Status", type:"select", options:["IN SERVICE","HOUSEWIFE","UN MARRIED","NOT IN SERVICE"]},
+    {id:"spouseOffice", label:"Spouse Office Name &amp; Address (if in service)", type:"textarea"},
+    {id:"spouseDept", label:"Spouse Department (if in service)", type:"text"},
+    {id:"spouseDoj", label:"Spouse Date of Joining (if in service)", type:"date"},
+    {id:"spouseDesignation", label:"Spouse Designation (if in service)", type:"text"},
+    {id:"spouseDob", label:"Spouse Date of Birth", type:"date"},
+    {id:"selfSpouseAddress", label:"Self / Spouse Residential Address", type:"textarea"},
+    {id:"spouseBankName", label:"Spouse Bank Name", type:"text"},
+    {id:"spouseBranchName", label:"Spouse Bank Branch", type:"text"},
+    {id:"spouseAccountNo", label:"Spouse Account No.", type:"text"}
+  ]
+},
+{
+  title:"Children (Nominees)",
+  fields:[
+    {id:"child1Name", label:"Child 1 - Name", type:"text"},
+    {id:"child1Relation", label:"Child 1 - Relation", type:"select", options:["SON","DAUGHTER"]},
+    {id:"child1Dob", label:"Child 1 - Date of Birth", type:"date"},
+    {id:"child1GratuityShare", label:"Child 1 - Gratuity Share % (optional)", type:"number", hint:"Leave blank to split evenly among children entered."},
+    {id:"child2Name", label:"Child 2 - Name", type:"text"},
+    {id:"child2Relation", label:"Child 2 - Relation", type:"select", options:["SON","DAUGHTER"]},
+    {id:"child2Dob", label:"Child 2 - Date of Birth", type:"date"},
+    {id:"child2GratuityShare", label:"Child 2 - Gratuity Share % (optional)", type:"number"},
+    {id:"child3Name", label:"Child 3 - Name", type:"text"},
+    {id:"child3Relation", label:"Child 3 - Relation", type:"select", options:["SON","DAUGHTER"]},
+    {id:"child3Dob", label:"Child 3 - Date of Birth", type:"date"},
+    {id:"child3GratuityShare", label:"Child 3 - Gratuity Share % (optional)", type:"number"}
+  ]
+},
+{
+  title:"Charge Hand-over / Administrative",
+  fields:[
+    {id:"chargeHandOverCause", label:"Reason for Charge Hand-over", type:"select", options:CHARGE_CAUSES},
+    {id:"chargeHandOverToName", label:"Incoming Officer - Name", type:"text"},
+    {id:"chargeHandOverToPost", label:"Incoming Officer - Post", type:"select", options:DESIGNATIONS},
+    {id:"chargeHandOverDate", label:"Charge Hand-over Date of Execution", type:"date"},
+    {id:"ticChargeFrom", label:"T.I.C. Charge From (existing user-id date)", type:"date"},
+    {id:"cpcName", label:"CPC Name / Address (Circle Project Co-ordinator)", type:"text"}
+  ]
+}
+];
+
+function defaultRecord(){
+  const d = {id:null, savedAt:null};
+  SECTIONS.forEach(sec=>sec.fields.forEach(f=>{ d[f.id] = f.type==="number" ? "" : ""; }));
+  d.gender = "MALE";
+  d.hoiStatus = "HEADMASTER";
+  d.adminStatus = "President [M.C.]";
+  d.hraMode = "PERCENT";
+  d.hraPercentValue = "12";
+  d.hraFixedAmount = "3600";
+  d.spouseRelation = "WIFE";
+  d.spouseStatus = "HOUSEWIFE";
+  d.child1Relation = "SON"; d.child2Relation="SON"; d.child3Relation="SON";
+  d.chargeHandOverCause = CHARGE_CAUSES[0];
+  d.chargeHandOverToPost = "TEACHER-IN-CHARGE";
+  return d;
+}
+
+/* =========================================================================
+   HELPERS & PRONOUN/DATE ENGINES
+   ========================================================================= */
+function proper(s){
+  if(s===null||s===undefined) return "";
+  return String(s).replace(/[A-Za-z]+/g, w => w.charAt(0).toUpperCase()+w.slice(1).toLowerCase());
+}
+function upper(s){ return s? String(s).toUpperCase() : ""; }
+function toDate(s){
+  if(!s) return null;
+  const parts = String(s).split("-");
+  if(parts.length!==3) return null;
+  const y=+parts[0], m=+parts[1], d=+parts[2];
+  if(!y||!m||!d) return null;
+  return new Date(y, m-1, d);
+}
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function fmtD(d, pattern){
+  if(!d) return "";
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yyyy = d.getFullYear();
+  switch(pattern){
+    case "dd-mmmm-yyyy": return `${dd}-${MONTHS[d.getMonth()]}-${yyyy}`;
+    case "dd-mmm-yyyy": return `${dd}-${MONTHS[d.getMonth()].slice(0,3)}-${yyyy}`;
+    case "mmmm d,yyyy": return `${MONTHS[d.getMonth()]} ${d.getDate()},${yyyy}`;
+    case "dd.mm.yyyy": return `${dd}.${mm}.${yyyy}`;
+    default: return `${dd}-${mm}-${yyyy}`;
+  }
+}
+function fmtDate(s, pattern){ return fmtD(toDate(s), pattern); }
+function minusDays(dateStr, n){ const d = toDate(dateStr); return d ? addDays(d, -n) : null; }
+function addDays(d, n){ const r=new Date(d.getTime()); r.setDate(r.getDate()+n); return r; }
+function excelDateK0(year, k){ return new Date(year, k, 0); }
+function calcSuperannuation(dobStr){
+  const dob = toDate(dobStr);
+  if(!dob) return null;
+  const y = dob.getFullYear()+60;
+  const em = dob.getMonth()+1;
+  if(dob.getDate()===1) return excelDateK0(y, em-1);
+  return excelDateK0(y, em);
+}
+function dateDiffY(start,end){
+  if(!start||!end) return 0;
+  let y = end.getFullYear()-start.getFullYear();
+  const m = end.getMonth()-start.getMonth();
+  const d = end.getDate()-start.getDate();
+  if(m<0 || (m===0 && d<0)) y--;
+  return Math.max(y,0);
+}
+function dateDiffYM(start,end){
+  if(!start||!end) return 0;
+  let m = end.getMonth()-start.getMonth();
+  if(end.getDate()<start.getDate()) m--;
+  m = ((m%12)+12)%12;
+  return m;
+}
+function dateDiffMD(start,end){
+  if(!start||!end) return 0;
+  let d = end.getDate()-start.getDate();
+  if(d<0){
+    const prevMonthLastDay = new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+    d += prevMonthLastDay;
+  }
+  return d;
+}
+function ageString(dobStr, asOf){
+  const dob = toDate(dobStr);
+  const ref = asOf || new Date();
+  if(!dob) return "";
+  return `${dateDiffY(dob,ref)}`;
+}
+function inr(n){
+  if(n===null||n===undefined||n==="" ||isNaN(n)) return "";
+  n = Math.round(Number(n));
+  const neg = n<0; n=Math.abs(n);
+  let s = String(n);
+  let last3 = s.slice(-3);
+  let rest = s.slice(0,-3);
+  if(rest!=="") last3 = ","+last3;
+  const formatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + last3;
+  return (neg?"-":"") + formatted;
+}
+
+/* Sex/Gender Pronoun Helpers */
+function MrMrs(g){ return g==="FEMALE" ? "Smt." : "Shri"; }
+function heShe(g){ return g==="FEMALE" ? "She" : "He"; }
+function heshe(g){ return g==="FEMALE" ? "she" : "he"; }
+function himHer(g){ return g==="FEMALE" ? "her" : "him"; }
+function hisHer(g){ return g==="FEMALE" ? "her" : "his"; }
+function HisHer(g){ return g==="FEMALE" ? "Her" : "His"; }
+function wifeHusband(g){ return g==="FEMALE" ? "husband" : "wife"; }
+function WifeHusband(g){ return g==="FEMALE" ? "Husband" : "Wife"; }
+
+/* Number and Date in Words Helpers */
+function numberToWords(n) {
+  const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  n = Math.floor(Math.abs(Number(n)||0));
+  if(n < 20) return ones[n];
+  if(n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' ' + ones[n%10] : '');
+  if(n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' ' + numberToWords(n%100) : '');
+  if(n < 100000) return numberToWords(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' ' + numberToWords(n%1000) : '');
+  return String(n);
+}
+
+function ordinalWords(n) {
+  const ords = ['','First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth','Tenth','Eleventh','Twelfth','Thirteenth','Fourteenth','Fifteenth','Sixteenth','Seventeenth','Eighteenth','Nineteenth','Twentieth','Twenty-First','Twenty-Second','Twenty-Third','Twenty-Fourth','Twenty-Fifth','Twenty-Sixth','Twenty-Seventh','Twenty-Eighth','Twenty-Ninth','Thirtieth','Thirty-First'];
+  return ords[n] || String(n);
+}
+
+function dobInWords(dobStr) {
+  const d = toDate(dobStr);
+  if(!d) return "";
+  const dayW = ordinalWords(d.getDate());
+  const monthW = MONTHS[d.getMonth()];
+  const year = d.getFullYear();
+  let yearW = "";
+  if(year >= 1900 && year < 2000) {
+    yearW = "Nineteen " + numberToWords(year - 1900);
+  } else if(year >= 2000 && year < 2100) {
+    yearW = "Two Thousand " + (year > 2000 ? numberToWords(year - 2000) : "");
+  } else {
+    yearW = numberToWords(year);
+  }
+  return `${dayW} ${monthW} ${yearW}`.trim();
+}
+
+function blank(txt){ return txt && String(txt).trim() ? txt : '<span class="field-empty">[not provided]</span>'; }
+function safe(txt){ return (txt===undefined||txt===null) ? "" : txt; }
+
+/* =========================================================================
+   HOI / ADMINISTRATIVE STATUS RESOLUTION ENGINE
+   ========================================================================= */
+function hoiSignatory(t){
+  return "HOI";
+}
+
+function isApplicantHmOrTic(t){
+  const desig = upper(t.designation || "");
+  return desig.includes("HEADMASTER") || desig.includes("HEADMISTRESS") || desig.includes("TEACHER-IN-CHARGE") || desig.includes("TIC") || desig.includes("HM");
+}
+
+function employeeRecipient(t){
+  if (isApplicantHmOrTic(t)) {
+    return upper(t.adminStatus || "Administrator / President [M.C.]");
+  }
+  return upper(t.hoiStatus || "Headmaster / Teacher-in-Charge");
+}
+
+function employeeThrough(t){
+  if (isApplicantHmOrTic(t)) {
+    return upper(t.adminStatus || "Administrator / President [M.C.]");
+  }
+  return upper(t.hoiStatus || "Headmaster / Teacher-in-Charge");
+}
+
+/* =========================================================================
+   COMPUTE  -  replicates DATA sheet's internal formulas
+   ========================================================================= */
+function compute(t){
+  const c = {};
+  c.dor = calcSuperannuation(t.dob);
+  c.dorStr = c.dor ? `${c.dor.getFullYear()}-${String(c.dor.getMonth()+1).padStart(2,"0")}-${String(c.dor.getDate()).padStart(2,"0")}` : "";
+  c.spouseDor = calcSuperannuation(t.spouseDob);
+
+  const doj = toDate(t.dojFirst);
+  c.serviceY = doj && c.dor ? dateDiffY(doj, c.dor) : 0;
+  c.serviceYM = doj && c.dor ? dateDiffYM(doj, c.dor) : 0;
+  c.serviceMD = doj && c.dor ? (1+dateDiffMD(doj, c.dor)) : 0;
+  c.totalLengthOfService = doj && c.dor ? `${c.serviceY}Y-${c.serviceYM}M-${c.serviceMD}-D` : "";
+
+  const bonus = c.serviceYM>=9 ? 3 : c.serviceYM>=6 ? 2 : c.serviceYM>=3 ? 1 : 0;
+  c.qualHalfYears = Math.min((bonus + c.serviceY*2)/2, 33);
+
+  const lastBasic = Number(t.lastBasicPay)||0;
+  c.lastBasicReckonable = lastBasic;
+  const da = Number(t.daPercent)||0;
+  c.daAmount = Math.round(lastBasic*da/100);
+  c.reckonableGratuity = c.lastBasicReckonable + c.daAmount;
+  c.gratuityAmount = Math.min(c.reckonableGratuity*c.qualHalfYears/2, 1200000);
+  c.commutationPct = Number(t.commutationPercent)||0;
+  c.reckonablePension = c.lastBasicReckonable * Math.min(c.qualHalfYears,20)/20;
+  c.pensionBasic = c.qualHalfYears<10 ? 0 : (c.qualHalfYears<20 ? Math.round((c.lastBasicReckonable/2)*(c.qualHalfYears/20)) : Math.round(c.lastBasicReckonable/2));
+  c.commutationAmount = Math.round(c.pensionBasic*c.commutationPct);
+  c.cvpAmount = Math.round(c.commutationAmount*8.194*12);
+  c.retirementTotalOneTime = c.gratuityAmount + c.cvpAmount;
+  c.pfGross = Number(t.pfGross)||0;
+  c.totalDuringRetirement = c.retirementTotalOneTime + c.pfGross;
+  c.deficitCrorepati = 10000000 - c.totalDuringRetirement;
+  c.monthlyPension = Math.round(c.pensionBasic) + Math.round(c.pensionBasic*da/100) + 500 - c.commutationAmount;
+
+  const gpRow = GRADE_PAYS.find(g=>String(g.gp)===String(t.lastGradePay));
+  c.payLevel = gpRow ? gpRow.level : "";
+
+  c.hraAmount = (String(t.hraMode).toUpperCase()==="FIXED") ? (Number(t.hraFixedAmount)||3600) : Math.round((Number(t.lastButBasicPay)||0)*(Number(t.hraPercentValue)||0)/100);
+
+  c.child1Age = t.child1Dob ? ageString(t.child1Dob, c.dor) : "";
+  c.child2Age = t.child2Dob ? ageString(t.child2Dob, c.dor) : "";
+  c.child3Age = t.child3Dob ? ageString(t.child3Dob, c.dor) : "";
+
+  c.isResignation = t.chargeHandOverCause && t.chargeHandOverCause.indexOf("Resignation")===0;
+  c.chargeExecDate = toDate(t.chargeHandOverDate);
+  c.chargeExecDatePlus1 = c.chargeExecDate ? addDays(c.chargeExecDate,1) : null;
+  c.dorPlus1 = c.dor ? addDays(c.dor,1) : null;
+
+  return c;
+}
+
+/* =========================================================================
+   DOCUMENT TEMPLATES
+   ========================================================================= */
+function pageWrap(content){
+  return `<div class="page">${content}</div>`;
+}
+function letterhead(t){
+  return `<div class="letterhead">
+    <div class="sc">${blank(upper(t.schoolName))}</div>
+    <div class="ad">${blank(proper(t.schoolAddress))}</div>
+  </div>`;
+}
+
+function docCOVER(t,c){
+  return `<div class="page cover-poster-layout">
+    <div style="border:1px solid var(--navy); height:100%; padding:8mm; position:relative; display:flex; flex-direction:column; justify-content:space-between;">
+      <div style="text-align:center;">
+        <div style="font-size:16pt; font-weight:bold; color:var(--navy); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2mm;">${blank(upper(t.schoolName))}</div>
+        <div style="font-size:10pt; color:#444; font-weight:600; margin-bottom:4mm;">${blank(proper(t.schoolAddress))}</div>
+        <div style="border-top:2px solid var(--navy); width:60mm; margin:0 auto 4mm auto;"></div>
+        <h2 style="font-size:13pt; font-weight:bold; color:var(--navy-dark); text-transform:uppercase; margin:2mm 0; letter-spacing:0.3px; line-height:1.3;">PENSION APPLICATION CASE FILE</h2>
+        <div style="font-size:9.5pt; color:var(--muted); font-weight:bold;">SUB-DIVISION: ${upper(safe(t.schoolSubDiv))} &nbsp;|&nbsp; TREASURY: ${upper(safe(t.treasury))}</div>
+      </div>
+      
+      <div style="margin:4mm 0; background:rgba(27,58,92,0.03); padding:4mm; border-radius:4px;">
+        <table style="width:100%; margin:0; font-size:10.5pt; border:none;">
+          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE NAME:</td><td style="font-weight:bold; padding:4px 0; border:none; color:var(--navy-dark); font-size:11pt;">${blank(upper(t.staffName))}</td></tr>
+          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">DESIGNATION:</td><td style="font-weight:bold; padding:4px 0; border:none;">${blank(upper(t.designation))}</td></tr>
+          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">RETIREMENT DATE:</td><td style="font-weight:bold; padding:4px 0; border:none; color:#a4322a;">${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):'[DOB REQUIRED]'}</td></tr>
+          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE CODE:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.employeeCode)}</td></tr>
+          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">APPLICATION ID:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.applicationId)}</td></tr>
+        </table>
+      </div>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:8.5pt; color:var(--muted); border-top:1px dashed var(--line); padding-top:2mm;">
+        <div>DISE CODE: ${blank(t.diseCode)}</div>
+        <div>MOBILE: ${blank(t.employeeMobile)}</div>
       </div>
     </div>
+  </div>`;
+}
 
-    <!-- TAB NAVIGATION -->
-    <div class="tabs-bar">
-      <div class="tab active" data-tab="form">Employee Form</div>
-      <div class="tab" data-tab="payCert">Pay Certificate</div>
-      <div class="tab" data-tab="hraCert">HRA Certificate</div>
-      <div class="tab" data-tab="hraDecl">HRA Declaration</div>
+function docSB(t,c){
+  const g = t.gender;
+  const doj1 = t.dojFirst, doj2 = t.dojPrevSchool2, doj3 = t.dojThisSchool;
+  let prevSchoolClause = "";
+  if(doj1 && doj3 && doj1!==doj3){
+    const end1 = minusDays(doj2 || doj3, 1);
+    prevSchoolClause += ` As per ${hisHer(g)} service record it is seen that previously ${heshe(g)} served to the post of ${blank(t.prevSchoolPost1)} for the period from ${fmtDate(doj1,"dd-mm-yyyy")} To ${fmtD(end1,"dd-mm-yyyy")} in ${blank(proper(t.prevSchool1))} satisfactorily and without any break.`;
+    if(doj2 && doj3 && doj2!==doj3){
+      const end2 = minusDays(doj3, 1);
+      prevSchoolClause += ` and to the post of ${blank(t.prevSchoolPost2)} in ${blank(proper(t.prevSchool2))} for the period from ${fmtDate(doj2,"dd-mm-yyyy")} To ${fmtD(end2,"dd-mm-yyyy")} satisfactorily and without any break.`;
+    }
+  }
+  const cert4a = `Certified that ${proper(t.schoolName)}; ${proper(t.schoolAddress)} is recognized school w.e.f. ${blank(fmtDate(t.schoolRecognisedDate,"dd-mm-yyyy"))} by the WBBSE and a Govt. Sponsored School and not a D.A. getting one where ${proper(t.staffName)} (to be retired ${proper(t.designation)} on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"[DOB required]"} [a.n.]) has been serving against a permanent post of ${proper(t.designation)} w.e.f. ${blank(fmtDate(t.dojThisSchool,"dd-mm-yyyy"))} to till date satisfactorily and without any break.${prevSchoolClause}`;
+  
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">Certificates [Service Book]</h2>
+    <p><strong>Certified that -</strong></p>
+    <ol class="items">
+      <li>${cert4a}</li>
+      <li>The service and leave statement of the incumbent has been properly verified since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date from relevant school records and found correct.</li>
+      <li>The service rendered by ${himHer(g)} has been satisfactory and ${heshe(g)} was present on both the closing and reopening date of each long vacation throughout ${hisHer(g)} period of service since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date without any break of service.</li>
+      <li>The incumbent has no liabilities with the school or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F.</li>
+      <li>There is no court case or any litigation against ${hisHer(g)} service.</li>
+      <li>${heShe(g)} enjoyed ${blank(t.medicalLeave)} days Medical Leave with full average pay, ${blank(t.halfPayLeave)} days Half Pay Leave, ${blank(t.extraOrdinaryLeave)} days Extra Ordinary Leave and ${blank(t.specialLeave)} days Special Leave during tenure i.e. ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date of ${hisHer(g)} service period, and other leave if any, all leaves have been approved by the M.C. / Competent Authority.</li>
+      <li>${heShe(g)} will retire on attaining the age of superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"[DOB required]"} and ${hisHer(g)} basic pay as per ROPA-19 will be Rs. ${inr(t.lastBasicPay)} on the date of superannuation retirement ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""} (a.n.).</li>
+      <li>It is recommended that Pension, Gratuity and other retirement benefits should be admissible to ${himHer(g)} as per ROPA-19 rules.</li>
+    </ol>
+    <p><strong>Certificate regarding Employment / Non-Employment of Spouse:</strong></p>
+    <p>${docSBEmploymentCertText(t,c)}</p>
+    <h2 class="doc-title" style="margin-top:8mm;">Certificate [Leave]</h2>
+    <p><strong>Certified that -</strong></p>
+    <ol class="items">
+      <li>The incumbent enjoyed ${blank(t.medicalLeave)} days Medical Leave with full average pay, ${blank(t.halfPayLeave)} days Half Pay Leave, ${blank(t.extraOrdinaryLeave)} days Extra Ordinary Leave and ${blank(t.specialLeave)} days Special Leave, and no other leave was enjoyed by ${himHer(g)} other than mentioned above during the tenure i.e. from ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date of ${hisHer(g)} service, and granted by M.C. / Administrator / competent authority; other leave if any has also been approved by the competent authority.</li>
+      <li>The service rendered by ${himHer(g)} has been satisfactory and ${heshe(g)} was present on both the closing and reopening date of each long vacation throughout ${hisHer(g)} period of service since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date without any break of service.</li>
+    </ol>
+    <div class="sig-block-right"><div class="sig-box"><div class="sig-line">Signature of the HOI / Office Seal</div></div></div>
+  `);
+}
+
+function docAB(t,c){
+  const renderSigSet = (setNumber) => `
+    <div style="margin-top: 15px; margin-bottom: 25px;">
+      <div style="text-align:right; font-weight:bold; font-size:10.5pt; margin-bottom: 8px;">
+        <span style="border-bottom:1px solid #111; padding-bottom:2px; width:65mm; display:inline-block; text-align:center;">Signature Attested</span>
+      </div>
+      <div style="line-height: 2.2; text-align:left; padding-left:5px;">
+        <div><strong>1st Signature:</strong> _____________________________________</div>
+        <div><strong>2nd Signature:</strong> _____________________________________</div>
+        <div><strong>3rd Signature:</strong> _____________________________________</div>
+      </div>
     </div>
+    ${setNumber < 3 ? '<hr style="border:none; border-top:1px dashed #ccc; margin:15px 0;">' : ''}
+  `;
 
-    <!-- DYNAMIC CONTENT VIEW -->
-    <div class="content-area" id="contentView"></div>
-  </main>
-
-  <script>
-    /* =========================================================================
-       DATA HANDLING & LOCAL STORAGE MODULE
-       ========================================================================= */
-    const STORAGE_KEY_INDEX = "pension_doc_index_v1";
-    const STORAGE_PREFIX = "pension_doc_rec_";
-
-    function defaultRecord() {
-      return {
-        id: null,
-        staffName: "RADHARAMAN PAINE",
-        gender: "M", // "M" or "F"
-        designation: "ASSISTANT TEACHER",
-        payScale: "LEVEL-14-PB-4-9000-40500-GP-RS-4700",
-        basicPay: "94,100",
-        payAsOfDate: "01-07-2026",
-        lastIncDate: "NIL",
-        noIncDue: true, // Toggle for NIL increment
-        dor: "30-06-2027",
-        spouseName: "Rina Paine",
-        spouseOccupation: "Housewife",
-        savedAt: null
-      };
-    }
-
-    let current = defaultRecord();
-    let originalSnapshot = JSON.stringify(current);
-    let dirty = false;
-    let activeTab = "form";
-
-    // Storage Utilities
-    async function loadIndex() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY_INDEX)) || [];
-      } catch(e) { return []; }
-    }
-
-    async function saveIndex(ids) {
-      localStorage.setItem(STORAGE_KEY_INDEX, JSON.stringify(ids));
-    }
-
-    async function loadRecordStorage(id) {
-      try {
-        const data = localStorage.getItem(STORAGE_PREFIX + id);
-        return data ? JSON.parse(data) : null;
-      } catch(e) { return null; }
-    }
-
-    async function saveRecord(rec) {
-      localStorage.setItem(STORAGE_PREFIX + rec.id, JSON.stringify(rec));
-    }
-
-    async function deleteRecordStorage(id) {
-      localStorage.removeItem(STORAGE_PREFIX + id);
-      let ids = await loadIndex();
-      ids = ids.filter(i => i !== id);
-      await saveIndex(ids);
-    }
-
-    /* =========================================================================
-       HELPER & FORMATTING UTILITIES
-       ========================================================================= */
-    const $ = selector => document.querySelector(selector);
-    const $$ = selector => document.querySelectorAll(selector);
-
-    function newId() {
-      return "rec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
-    }
-
-    function escapeHtml(str) {
-      if (!str) return "";
-      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    }
-
-    function proper(str) {
-      if (!str) return "";
-      return str.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-    }
-
-    function getGenderTerms(gender) {
-      const isFemale = (gender || "M").toUpperCase() === "F";
-      return {
-        empPossessive: isFemale ? "her" : "his",
-        empPossessiveCap: isFemale ? "Her" : "His",
-        spouseRel: isFemale ? "Husband" : "Wife",
-        spouseRelLower: isFemale ? "husband" : "wife",
-        spouseSubj: isFemale ? "He" : "She",
-        spouseObj: isFemale ? "him" : "her"
-      };
-    }
-
-    /* =========================================================================
-       DOCUMENT TEMPLATE GENERATORS (WITH ANOMALY FIXES)
-       ========================================================================= */
-
-    // ANOMALY 1 FIX: Pay Certificate Continuation Clause Logic
-    function renderPayCertClauseB(rec) {
-      const terms = getGenderTerms(rec.gender);
-      const isNil = rec.noIncDue || !rec.lastIncDate || rec.lastIncDate.trim().toUpperCase() === "NIL";
-
-      if (isNil) {
-        return `(b) ${terms.empPossessiveCap} last increment before retirement in the aforesaid scale was due on <strong>NIL</strong> for which ${terms.empPossessive} pay <strong>Rs. ${escapeHtml(rec.basicPay)} p.m. WILL CONTINUE</strong> up to the date of ${terms.empPossessive} Superannuation on <strong>${escapeHtml(rec.dor)}</strong>.`;
-      }
-
-      return `(b) ${terms.empPossessiveCap} last increment before retirement in the aforesaid scale was due on <strong>${escapeHtml(rec.lastIncDate)}</strong> which raised ${terms.empPossessive} pay to <strong>Rs. ${escapeHtml(rec.basicPay)} p.m.</strong> up to the date of ${terms.empPossessive} Superannuation on <strong>${escapeHtml(rec.dor)}</strong>.`;
-    }
-
-    function renderPayCertTab(rec) {
-      const terms = getGenderTerms(rec.gender);
-      return `
-        <div class="doc-container">
-          <div class="doc-page">
-            <h2 style="text-decoration: underline;">PAY CERTIFICATE</h2>
-            <br>
-            <p style="text-align: justify;">
-              1. (a) The Basic pay of Shri/Smt <strong>${escapeHtml(rec.staffName)}</strong> as on <strong>${escapeHtml(rec.payAsOfDate)}</strong> was <strong>Rs. ${escapeHtml(rec.basicPay)} p.m.</strong> in the scale of pay of <strong>Rs. ${escapeHtml(rec.payScale)}</strong>.
-            </p>
-            <br>
-            <p style="text-align: justify;">
-              ${renderPayCertClauseB(rec)}
-            </p>
-            <br><br><br>
-            <div style="display: flex; justify-content: space-between; margin-top: 60px;">
-              <div>Date: ______________</div>
-              <div style="text-align: center;">
-                ____________________________<br>
-                Signature of Head of Institution
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // ANOMALY 2 FIX: HRA Certificate Gender & Spouse Pronouns
-    function renderHraCertTab(rec) {
-      const terms = getGenderTerms(rec.gender);
-      const occupation = rec.spouseOccupation || "Housewife";
-
-      return `
-        <div class="doc-container">
-          <div class="doc-page">
-            <h2 style="text-decoration: underline;">HRA CERTIFICATE</h2>
-            <p style="text-align: center; font-weight: bold; margin-bottom: 25px;">Certificate regarding Employment / Non-Employment and HRA of the Spouse</p>
-            
-            <p style="text-align: justify; line-height: 1.8;">
-              Certified that <strong>${escapeHtml(rec.spouseName)}</strong>, ${terms.spouseRel} of <strong>${escapeHtml(rec.staffName)}</strong> is ${escapeHtml(occupation)} and not in service. ${terms.spouseSubj} was not engaged in any service under the Government of India or any State Government Undertaking or any statutory or Local body, Educational Institution, etc. at anywhere and anytime since or before their marriage, and hence no question for drawal of HRA by ${terms.spouseObj}. HRA drawn by <strong>${escapeHtml(rec.staffName)}</strong> is as per Grant-in-Aid rules and within the prescribed limit throughout ${terms.empPossessive} service.
-            </p>
-            <br><br><br>
-            <div style="display: flex; justify-content: space-between; margin-top: 60px;">
-              <div>Date: ______________</div>
-              <div style="text-align: center;">
-                ____________________________<br>
-                Signature of Head of Institution
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // ANOMALY 3 FIX: HRA Declaration Duplicated Text
-    function renderHraDeclTab(rec) {
-      const terms = getGenderTerms(rec.gender);
-
-      return `
-        <div class="doc-container">
-          <div class="doc-page">
-            <h2 style="text-decoration: underline;">HRA DECLARATION</h2>
-            <p style="margin-top: 15px;"><strong>Sub:</strong> Declaration regarding Employment / Non-Employment and HRA of the Spouse</p>
-            <br>
-            <p>Sir / Madam,</p>
-            <br>
-            <p style="text-align: justify; line-height: 1.8;">
-              I, <strong>${escapeHtml(rec.staffName)}</strong>; <strong>${escapeHtml(rec.designation)}</strong> of this school, do hereby declare that my ${terms.spouseRelLower} <strong>${escapeHtml(rec.spouseName)}</strong> is not in service and hence no question for drawal by spouse. HRA drawn / is being drawn by me is within the prescribed Grant-in-Aid rules.
-            </p>
-            <br><br>
-            <p>Thanking You.</p>
-            <br><br>
-            <div style="display: flex; justify-content: space-between; margin-top: 40px;">
-              <div>Date: ______________</div>
-              <div style="text-align: center;">
-                ____________________________<br>
-                Signature of Employee
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    /* =========================================================================
-       FORM RENDERER
-       ========================================================================= */
-    function renderFormTab(rec) {
-      return `
-        <div style="max-width: 900px; margin: 0 auto;">
-          <h2 style="margin-bottom: 20px; color: var(--primary);">Employee & Pension Details</h2>
-          <form id="pensionForm" class="form-grid" onsubmit="event.preventDefault();">
-            <div class="form-group">
-              <label>Staff Name</label>
-              <input type="text" class="form-control" name="staffName" value="${escapeHtml(rec.staffName)}">
-            </div>
-            
-            <div class="form-group">
-              <label>Gender</label>
-              <select class="form-control" name="gender">
-                <option value="M" ${rec.gender === "M" ? "selected" : ""}>Male</option>
-                <option value="F" ${rec.gender === "F" ? "selected" : ""}>Female</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Designation</label>
-              <input type="text" class="form-control" name="designation" value="${escapeHtml(rec.designation)}">
-            </div>
-
-            <div class="form-group">
-              <label>Pay Scale / Level</label>
-              <input type="text" class="form-control" name="payScale" value="${escapeHtml(rec.payScale)}">
-            </div>
-
-            <div class="form-group">
-              <label>Basic Pay (Rs.)</label>
-              <input type="text" class="form-control" name="basicPay" value="${escapeHtml(rec.basicPay)}">
-            </div>
-
-            <div class="form-group">
-              <label>Pay As On Date</label>
-              <input type="text" class="form-control" name="payAsOfDate" value="${escapeHtml(rec.payAsOfDate)}">
-            </div>
-
-            <div class="form-group">
-              <label>Date of Superannuation (DOR)</label>
-              <input type="text" class="form-control" name="dor" value="${escapeHtml(rec.dor)}">
-            </div>
-
-            <div class="form-group">
-              <label>Last Increment Date</label>
-              <input type="text" class="form-control" name="lastIncDate" value="${escapeHtml(rec.lastIncDate)}" ${rec.noIncDue ? "disabled" : ""}>
-              <label class="checkbox-label" style="margin-top: 5px;">
-                <input type="checkbox" name="noIncDue" ${rec.noIncDue ? "checked" : ""}> No increment due before retirement (NIL)
-              </label>
-            </div>
-
-            <div class="form-group">
-              <label>Spouse Name</label>
-              <input type="text" class="form-control" name="spouseName" value="${escapeHtml(rec.spouseName)}">
-            </div>
-
-            <div class="form-group">
-              <label>Spouse Occupation</label>
-              <input type="text" class="form-control" name="spouseOccupation" value="${escapeHtml(rec.spouseOccupation)}">
-            </div>
-          </form>
-        </div>
-      `;
-    }
-
-    /* =========================================================================
-       UI RENDER & EVENT HANDLERS
-       ========================================================================= */
-    function render() {
-      // 1. Update Tabs Active State
-      $$(".tab").forEach(t => {
-        t.classList.toggle("active", t.dataset.tab === activeTab);
-      });
-
-      // 2. Render View Content
-      const view = $("#contentView");
-      if (activeTab === "form") {
-        view.innerHTML = renderFormTab(current);
-        bindFormEvents();
-      } else if (activeTab === "payCert") {
-        view.innerHTML = renderPayCertTab(current);
-      } else if (activeTab === "hraCert") {
-        view.innerHTML = renderHraCertTab(current);
-      } else if (activeTab === "hraDecl") {
-        view.innerHTML = renderHraDeclTab(current);
-      }
-    }
-
-    function bindFormEvents() {
-      const form = $("#pensionForm");
-      if (!form) return;
-
-      form.addEventListener("input", (e) => {
-        const target = e.target;
-        if (target.name === "noIncDue") {
-          current.noIncDue = target.checked;
-          if (target.checked) current.lastIncDate = "NIL";
-        } else {
-          current[target.name] = target.value;
-        }
-        dirty = true;
+  return pageWrap(`
+    <div style="font-family:'Times New Roman', serif; line-height:1.5;">
+      <div style="text-align:center;">
+        <h2 style="font-size:14pt; margin:0 0 2px 0; font-weight:bold;">ENCLOSURE&mdash;&lsquo;A&rsquo;</h2>
+        <h3 style="font-size:11pt; margin:0 0 12px 0; font-weight:bold;">(To be supplied by the Pensioner / Family Pensioner)</h3>
+        <p style="text-align:justify; margin:0 0 15px 0; font-size:11pt;">
+          Three Specimen Signatures of Pensioner to be given below, duly attested by Gr. &lsquo;A&rsquo; / erstwhile Gazetted Officer. (For use at the Directorate of Pension, Provident Fund and Group Insurance).
+        </p>
         
-        // Re-sync disabled state of lastIncDate input
-        const incInput = form.querySelector('[name="lastIncDate"]');
-        if (incInput) {
-          incInput.disabled = current.noIncDue;
-          if (current.noIncDue) incInput.value = "NIL";
-        }
-      });
+        <div style="text-align:left; font-size:12.5pt; font-weight:bold; margin:15px 0 20px 0;">
+          Name of the Pensioner: <span style="text-decoration:underline;">${upper(blank(t.staffName))}</span>
+          <div style="font-size:9.5pt; font-weight:normal; margin-top:2px; color:#333;">[In Block Letters]</div>
+        </div>
+      </div>
+
+      ${renderSigSet(1)}
+      ${renderSigSet(2)}
+      ${renderSigSet(3)}
+
+      <hr style="border:none; border-top:2px solid #111; margin:25px 0;">
+
+      <div style="text-align:center;">
+        <h2 style="font-size:14pt; margin:0 0 2px 0; font-weight:bold;">ENCLOSURE&mdash;&lsquo;B&rsquo;</h2>
+        <h3 style="font-size:11pt; margin:0 0 4px 0; font-weight:bold;">(To be supplied by the Pensioner / Family Pensioner)</h3>
+        <p style="text-align:justify; margin:0 0 6px 0; font-size:11pt;">Three Copies of Photographs (Single/Joint) to be stapled below. The photo should have the name(s) of Pensioner(s) and attested on the front side by Gr. 'A' officer / HOI of the institution.</p>
+        <h4 style="font-size:10.5pt; margin:0 0 15px 0; font-weight:bold;">(To be furnished by the Pensioner or by the Family Pensioner as the case may be)</h4>
+        
+        <div style="display:flex; justify-content:space-between; margin-top:20px; width:100%;">
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">PHOTO</div>
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">PHOTO</div>
+          <div style="width:30%; aspect-ratio:4/5; border:1px solid #111; display:flex; align-items:center; justify-content:center; color:#444; font-size:9.5pt; text-align:center; padding:5px; font-weight:bold; background:#fff;">PHOTO</div>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function docE(t,c){
+  const alternates = [
+    t.child1Name ? {name:proper(t.child1Name), rel:proper(t.child1Relation), dob:t.child1Dob, share:t.child1GratuityShare} : null,
+    t.child2Name ? {name:proper(t.child2Name), rel:proper(t.child2Relation), dob:t.child2Dob, share:t.child2GratuityShare} : null,
+    t.child3Name ? {name:proper(t.child3Name), rel:proper(t.child3Relation), dob:t.child3Dob, share:t.child3GratuityShare} : null
+  ].filter(Boolean);
+  
+  const rowCount = Math.max(alternates.length, 1);
+  const anyShareEntered = alternates.some(a => a.share!==undefined && a.share!==null && a.share!=="");
+  const equalShare = alternates.length ? Math.round(100/alternates.length) : 100;
+  const rows = [];
+  
+  const isSpouseMinor = t.spouseDob ? (dateDiffY(toDate(t.spouseDob), c.dor) < 18) : false;
+
+  for(let i=0; i<rowCount; i++){
+    const alt = alternates[i];
+    const sharePct = alt ? (anyShareEntered ? (Number(alt.share)||0) : equalShare) : 0;
+    const altAge = alt && alt.dob ? dateDiffY(toDate(alt.dob), c.dor) : 0;
+    const isAltMinor = alt && alt.dob && (Number(altAge) < 18);
+    
+    let row = "<tr>";
+    if(i===0){
+      row += `<td rowspan="${rowCount}" style="width:16%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:8%;" class="center">${blank(proper(t.spouseRelation))}</td>`;
+      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}<br><span style="font-size:8pt;">[${dobInWords(t.spouseDob)}]</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:10%;" class="center">${isSpouseMinor ? "Guardian details required" : "N.A."}</td>`;
     }
+    
+    let altNameCell = "";
+    if (alt) {
+      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)} [${sharePct}%]</span>`;
+    }
+    
+    row += `<td style="width:18%;">${altNameCell}</td>`;
+    row += `<td style="width:8%;" class="center">${alt ? blank(proper(alt.rel)) : ""}</td>`;
+    row += `<td style="width:8%;" class="center">${alt ? (isAltMinor ? "" : "N.A.") : ""}</td>`;
+    row += `<td style="width:10%;" class="center">${alt ? (isAltMinor ? "" : "N.A.") : ""}</td>`;
+    if(i===0){
+      row += `<td rowspan="${rowCount}" style="width:10%;" class="center">Death, Divorce, Remarriage or Insanity</td>`;
+    }
+    row += "</tr>";
+    rows.push(row);
+  }
 
-    async function renderRecordList() {
-      const listEl = $("#recordList");
-      const ids = await loadIndex();
-      const filter = $("#searchBox").value.toLowerCase();
+  return `<div class="page landscape-layout">
+    <div style="font-family:'Times New Roman', Georgia, serif; font-size:10.5pt; line-height:1.4;">
+      <div style="text-align:right; font-weight:bold; font-size:11pt; margin-bottom:5px;">ENCLOSURE - 'E'</div>
+      <h2 class="doc-title" style="margin: 0 0 2px 0; font-size:13pt;">NOMINATION FOR PAYMENT OF LIFE TIME ARREAR OF PENSION.</h2>
+      <h3 class="doc-sub" style="margin: 0 0 10px 0; font-weight:normal; font-size:10.5pt;">(To be furnished by the Employee)</h3>
       
-      listEl.innerHTML = "";
-      for (let id of ids) {
-        const item = await loadRecordStorage(id);
-        if (!item) continue;
-        if (filter && !item.staffName.toLowerCase().includes(filter)) continue;
+      <p style="margin-bottom:4px;">Pension Disbursing Authority / HOI</p>
+      <p style="margin-bottom:4px;">Name of Bank / Treasury / Accountant General, West Bengal</p>
+      <p style="margin-bottom:12px;">(Place) ___________________________</p>
+      
+      <p style="margin-bottom:12px;">I <strong class="blank" style="min-width:350px;">${upper(blank(t.staffName))}</strong> (Name of the pensioner in Capital letters) hereby nominate the person named below under rule 5 of the Payment of Arrear of Pension (Nomination) Rules, 1986.</p>
+      
+      <table class="pension-table" style="width:100%; margin-bottom:15px;">
+        <thead>
+          <tr>
+            <th>Name and address of nominees</th>
+            <th>Relationship with pensioner</th>
+            <th>Date of Birth</th>
+            <th>If nominee is minor name and address of person who may receive the said pension during the nominee's minority</th>
+            <th>Name and address of other nominee in case the nominee under Col. (1) predeceases the pensioner</th>
+            <th>Relationship with pensioner</th>
+            <th>Date of Birth If the other nominee is minor</th>
+            <th>Name and address of person who may receive the pension during the other nominee's minority</th>
+            <th>Contingency of happening of which nomination shall become invalid</th>
+          </tr>
+          <tr style="font-size:8.5pt;" class="center">
+            <td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td><td>(7)</td><td>(8)</td><td>(9)</td>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.join("")}
+        </tbody>
+      </table>
+      
+      <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:flex-start;">
+        <div style="text-align:left; width:50%;">
+          <p style="margin-bottom:4px;">Place: ___________________________</p>
+          <p style="margin-bottom:15px;">Date: ___________________________</p>
+          <p style="margin-bottom:4px;">Witness: Signature, Name &amp; Address:</p>
+          <div style="border-bottom:1px solid #333; height:8mm; width:75mm; margin-bottom:8px;">1.</div>
+          <div style="border-bottom:1px solid #333; height:8mm; width:75mm; margin-bottom:20px;">2.</div>
+          <p style="font-weight:bold; margin-top:10px;">Signature of the HOI / Pension Disbursing Authority</p>
+        </div>
+        
+        <div style="text-align:right; width:45%; display:flex; flex-direction:column; align-items:flex-end;">
+          <div style="border-top:1px solid #111; width:75mm; text-align:center; padding-top:4px; margin-top:40px; font-weight:bold;">
+            Signature (or thumb impression if illiterate) and name of pensioner and address
+          </div>
+        </div>
+      </div>
+      
+      <div style="border-top:1px dashed #000; margin-top:20px; padding-top:10px;">
+        <p style="font-weight:bold; margin-bottom:4px;">Acknowledgement to be sent by the HOI / Pension Disbursing Authority</p>
+        <p>Certified that application/nomination has been received from ${MrMrs(t.gender)} <strong class="blank" style="min-width:250px;">${upper(blank(t.staffName))}</strong> (Name of Pensioner) whose address is _________________________________________________.</p>
+        
+        <div style="display:flex; justify-content:space-between; margin-top:20px;">
+          <div>
+            Place ___________________________<br><br>
+            Date ___________________________
+          </div>
+          <div style="text-align:center; width:70mm;">
+            <div style="border-top:1px solid #111; padding-top:4px; font-weight:bold; font-size:10pt;">
+              Signature of the HOI / Pension Disbursing Authority<br>
+              Full Address: ___________________________
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
-        const div = document.createElement("div");
-        div.className = `record-item ${current.id === item.id ? "active" : ""}`;
-        div.innerHTML = `
-          <div class="name">${escapeHtml(item.staffName || "Unnamed")}</div>
-          <div class="sub">${escapeHtml(item.designation)} | DOR: ${escapeHtml(item.dor)}</div>
-        `;
-        div.addEventListener("click", async () => {
-          if (dirty && !confirm("Discard unsaved changes?")) return;
-          current = item;
-          originalSnapshot = JSON.stringify(current);
-          dirty = false;
-          render();
-          renderRecordList();
-        });
-        listEl.appendChild(div);
+function docD(t,c){
+  const alternates = [
+    t.child1Name ? {name:proper(t.child1Name), rel:proper(t.child1Relation), dob:t.child1Dob, share:t.child1GratuityShare} : null,
+    t.child2Name ? {name:proper(t.child2Name), rel:proper(t.child2Relation), dob:t.child2Dob, share:t.child2GratuityShare} : null,
+    t.child3Name ? {name:proper(t.child3Name), rel:proper(t.child3Relation), dob:t.child3Dob, share:t.child3GratuityShare} : null
+  ].filter(Boolean);
+
+  const rowCount = Math.max(alternates.length, 1);
+  const anyShareEntered = alternates.some(a => a.share!==undefined && a.share!==null && a.share!=="");
+  const equalShare = alternates.length ? Math.round(100/alternates.length) : 100;
+  const rows = [];
+
+  const spouseAge = t.spouseDob ? ageString(t.spouseDob, c.dor) : "";
+
+  for(let i=0; i<rowCount; i++){
+    const alt = alternates[i];
+    const sharePct = alt ? (anyShareEntered ? (Number(alt.share)||0) : equalShare) : 0;
+    
+    let row = "<tr>";
+    if(i===0){
+      row += `<td rowspan="${rowCount}" style="width:22%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:10%;" class="center">${blank(proper(t.spouseRelation))}</td>`;
+      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">${spouseAge ? `${spouseAge} Y+` : ""}<br><span style="font-size:8pt;">[DOB: ${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}]</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:10%;" class="center">100%</td>`;
+      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">Death, Divorce, Remarriage or Insanity</td>`;
+    }
+    
+    let altNameCell = "";
+    if(alt) {
+      altNameCell = `<strong>(${i+2})</strong> ${blank(alt.name)}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}, ${upper(alt.rel)} [DOB: ${blank(fmtDate(alt.dob,"dd-mm-yyyy"))}]</span>`;
+    }
+    
+    row += `<td style="width:24%;">${altNameCell}</td>`;
+    row += `<td style="width:10%;" class="center">${alt ? `${sharePct}%` : ""}</td>`;
+    row += "</tr>";
+    rows.push(row);
+  }
+
+  return `<div class="page landscape-layout">
+    <div style="font-family:'Times New Roman', Georgia, serif; font-size:10.5pt; line-height:1.45;">
+      <div style="text-align:right; font-weight:bold; font-size:11pt; margin-bottom:5px;">ENCLOSURE - 'D'</div>
+      <h2 class="doc-title" style="margin: 0 0 2px 0; font-size:13pt;">NOMINATION FOR PAYMENT OF DEATH-CUM-RETIREMENT GRATUITY</h2>
+      <h3 class="doc-sub" style="margin: 0 0 12px 0; font-weight:normal; font-size:10.5pt;">(To be furnished by the Employee)</h3>
+      
+      <p style="text-align:justify; margin-bottom:12px;">
+        I hereby nominate the person mentioned below, who are members of my family, and confer on them the right to receive, to the extent specified below, any gratuity that may be sanctioned by Government in the event of my death while in service and the right to receive on my death, to the extent specified below, any gratuity which having became admissible to me on retirement my remain unpaid at my death:
+      </p>
+
+      <table class="pension-table" style="width:100%; margin-bottom:15px;">
+        <thead>
+          <tr>
+            <th>Name and Address of Nominees</th>
+            <th>Relationship with employee</th>
+            <th>Age</th>
+            <th>Amount of share of gratuity payable to each</th>
+            <th>Contingencies on the happening of which the nomination shall become invalid</th>
+            <th>Name, address and relationship of the person of persons, if any, to whom the right conferred on the nominees shall pass in the event of the nominee pre-deceasing the employee or the nominee dying after the death of the employee but before receiving payment</th>
+            <th>Amount of share of gratuity payable to each</th>
+          </tr>
+          <tr style="font-size:8.5pt;" class="center">
+            <td>(1)</td><td>(2)</td><td>(3)</td><td>(4)</td><td>(5)</td><td>(6)</td><td>(7)</td>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.join("")}
+        </tbody>
+      </table>
+
+      <p style="margin-bottom:12px;">*The nomination supersedes the nomination made by me earlier on ____________________ which stands cancelled.</p>
+      
+      <p style="margin-bottom:20px;">Dated this ____________________ day of ____________________ 20____ at ____________________</p>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:25px;">
+        <div style="width:50%;">
+          <p style="margin-bottom:4px;">Witness to Signature :</p>
+          <div style="border-bottom:1px solid #333; height:8mm; width:70mm; margin-bottom:6px;">(1) _____________________________________</div>
+          <div style="border-bottom:1px solid #333; height:8mm; width:70mm; margin-bottom:15px;">(2) _____________________________________</div>
+          
+          <div style="font-size:8.5pt; line-height:1.3; color:#222; margin-top:15px;">
+            <strong>Note:</strong><br>
+            (1) The employee shall draw lines across the blank space below the last entry to prevent the insertion of any name after he has signed.<br>
+            (2) Fourth column should be filled in so as to cover the whole amount of gratuity.<br>
+            (3) The amount/share of gratuity shown in last column to cover the whole amount/share payable to the original nominee.<br>
+            *Strike out, if not applicable
+          </div>
+        </div>
+        
+        <div style="width:45%; text-align:right; display:flex; flex-direction:column; align-items:flex-end;">
+          <div style="border-top:1px solid #111; width:65mm; text-align:center; padding-top:4px; margin-bottom:40px; font-weight:bold;">
+            (Signature of Employee)
+          </div>
+          <div style="border-top:1px solid #111; width:65mm; text-align:center; padding-top:4px; font-weight:bold;">
+            Signature of the HOI (Office Seal)
+          </div>
+        </div>
+      </div>
+      <p style="margin-top:10px; font-size:10pt;">Date : ___________________</p>
+    </div>
+  </div>`;
+}
+
+function docHRAD(t,c){
+  const g = t.gender;
+  const recipient = employeeRecipient(t);
+  const spTitle = g==="MALE" ? "Smt." : "Sri";
+  const spRel = wifeHusband(g);
+  
+  let bodyText = "";
+  if(t.spouseStatus === "UN MARRIED"){
+    bodyText = "I am unmarried. No HRA is drawn for spouse. HRA drawn by me is within GA rules.";
+  } else if(["HOUSEWIFE","NOT IN SERVICE"].includes(t.spouseStatus)){
+    bodyText = `my ${spRel} ${blank(proper(t.spouseName))} is not in service and hence no question for drawn of HRA by spouse. HRA drawn / being drawn by me is within the prescribed Grant-in-Aid rules.`;
+  } else {
+    bodyText = `my ${spRel} ${spTitle} ${blank(proper(t.spouseName))} is serving as ${blank(proper(t.spouseDesignation))} in ${blank(proper(t.spouseOffice))} under ${blank(proper(t.spouseDept))} since ${blank(fmtDate(t.spouseDoj,"dd-mm-yyyy"))}, retiring on ${fmtD(c.spouseDor,"dd-mm-yyyy")}. HRA drawn by both of us is within GA rules${Number(t.hraOverdrawn)>0?`. Excess HRA of Rs.${inr(t.hraOverdrawn)} refunded via TR-7 ${safe(t.challanNoDate)}`:"."}`;
+  }
+
+  return pageWrap(`
+    <p><strong>To</strong></p>
+    <p>The ${blank(recipient)}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
+    <p><strong>Sub: Declaration regarding Employment / Non-Employment and HRA of the Spouse</strong></p>
+    <p>Sir / Madam,</p>
+    <p>I, ${blank(proper(t.staffName))}; ${blank(t.designation)} of this school, do hereby declare that ${bodyText}</p>
+    <p>Thanking You.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:10mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
+        <div class="sig-line">${blank(proper(t.staffName))}<br>${blank(t.designation)}<br>${blank(proper(t.schoolName))}</div>
+      </div>
+    </div>
+  `);
+}
+
+function docHRAC(t,c){
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">Certificate regarding Employment / Non-Employment and HRA of the Spouse</h2>
+    <p>${docSBEmploymentCertText(t,c)}</p>
+    <div class="sig-block-right" style="margin-top:16mm;">
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI / Office Seal</div>
+      </div>
+    </div>
+  `);
+}
+function docSBEmploymentCertText(t,c){
+  const g=t.gender;
+  const sg = g==="MALE" ? "FEMALE" : "MALE";
+  if(t.spouseStatus==="IN SERVICE"){
+    return `Certified that ${blank(proper(t.spouseName))}; ${wifeHusband(g)} of ${proper(t.staffName)} is serving / served to the post of ${blank(proper(t.spouseDesignation))} in ${blank(proper(t.spouseOffice))} under the ${blank(proper(t.spouseDept))} since ${blank(fmtDate(t.spouseDoj,"dd-mm-yyyy"))} and to be retired on ${fmtD(c.spouseDor,"dd-mm-yyyy")}. House Rent drawn by both of them is as per GA rules and within the prescribed limit throughout their service.`;
+  }
+  if(["HOUSEWIFE","NOT IN SERVICE"].includes(t.spouseStatus)){
+    return `Certified that ${blank(proper(t.spouseName))}; ${wifeHusband(g)} of ${proper(t.staffName)} is ${g==="MALE"?"Housewife and not in service":"Not in Service"}. ${heShe(sg)} was not engaged in any service under the Government of India or any State Government Undertaking or any statutory or Local body, Educational Institution, etc. at anywhere and anytime since or before their marriage, and hence no question for drawn of HRA by ${himHer(sg)}. HRA drawn by ${proper(t.staffName)} is as per Grant-in-Aid rules and within the prescribed limit throughout ${hisHer(g)} service.`;
+  }
+  if(t.spouseStatus==="UN MARRIED") return `Certified that ${proper(t.staffName)} is Unmarried.`;
+  return "";
+}
+
+function docNOLIA(t,c){
+  const g=t.gender;
+  return pageWrap(`
+    <div style="font-family:'Times New Roman', Times, serif;">
+      <h2 class="doc-title" style="margin-bottom: 2px;">LIABILILITY / NO LIABILILITY CERTIFICATE</h2>
+      <h3 class="doc-sub" style="font-weight: normal; margin-bottom: 15px;">To be issued on the date of superannuation by the appointing Authority/ Head of the office /Sub-inspector (Circle)</h3>
+      
+      <div class="to-block">
+        <p>To<br>The Pension Disbursing Officer / Treasury Officer<br>${upper(blank(t.treasury))}</p>
+      </div>
+      
+      <p>${MrMrs(g)} <strong>${upper(blank(t.staffName))}</strong>; Designation <strong>${blank(t.designation)}</strong> of <strong>${blank(proper(t.schoolName))}</strong> to be retired on superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong> (a.n.)</p>
+      
+      <p>Certified that -</p>
+      <ol class="items">
+        <li>${heShe(g)} will draw Basic pay @ Rs. ${inr(t.lastBasicPay)}/- per month on the date of superannuation and total amt. of pay reckonable for pension and Gratuity is Rs. ${inr(c.pensionBasic)} &amp; Rs. ${inr(c.gratuityAmount)}.</li>
+        <li>The service rendered by ${himHer(g)} during the period from <strong>${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))}</strong> (Dt. Of issue of PC) To <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong> (Dt. of Retirement) qualifies for pension and Gratuity.</li>
+        <li>No court case/ Departmental proceedings is pending against ${himHer(g)}.</li>
+        <li>${heShe(g)} has no liability which is yet to be recovered from ${hisHer(g)} retirement benefit except those which have been mentioned in ${hisHer(g)} pay certificate. Following amount have to be recovered from the Gratuity and pension Relief in addition to the amount mentioned in ${hisHer(g)} pay certificate.<br>
+          <div style="margin: 5px 0; padding-left: 15px;">
+            1. ______________________ for ______________________<br>
+            2. ______________________ for ______________________<br>
+            3. ______________________ for ______________________
+          </div>
+        </li>
+        <li>No Provisional pension and No Provisional Gratuity have been sanctioned to ${himHer(g)}. Provisional Gratuity of Rs. ______________________ and Provisional pension @ Rs. ______________________ .p.m. for the period from ______________________ To ______________________ have been sanctioned and paid to ${himHer(g)}.</li>
+        <li>Following amount have been mentioned in the pay certificate as to be recovered from the pensionary benefits.<br>
+          <div style="margin: 5px 0; padding-left: 15px;">
+            i. Rs ______________________ for ______________________<br>
+            ii. Rs ______________________ for ______________________<br>
+            iii. Rs ______________________ for ______________________
+          </div>
+        </li>
+      </ol>
+      <p>${HisHer(g)} pensionary benefits may be released accordingly.</p>
+      
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:25px;">
+        <div>Date:- _____________________</div>
+        <div class="sig-box">
+          <div class="sig-line">Signature of the HOI<br>Office Seal</div>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function docPAYC(t,c){
+  const g = t.gender;
+  const today = new Date();
+  const curYear = today.getFullYear();
+  const julyThisYear = new Date(curYear, 6, 1);
+  let lastJulyDate = today >= julyThisYear ? julyThisYear : new Date(curYear - 1, 6, 1);
+  const lastJulyStr = fmtD(lastJulyDate, "dd.mm.yyyy");
+  const wasIs = today >= lastJulyDate ? "was" : "is";
+
+  const incDate = toDate(t.lastIncrementDate);
+  const hasIncrement = incDate && Number(t.lastBasicPay) !== Number(t.lastButBasicPay) && (!c.dor || incDate <= c.dor);
+
+  let clauseB = "";
+  if (hasIncrement) {
+    const isIncPast = today >= incDate;
+    const isWasDue = isIncPast ? "was due" : "is due";
+    const willRaise = isIncPast ? "raised" : "will raise";
+    clauseB = `(b). ${HisHer(g)} last increment before retirement in the aforesaid scale ${isWasDue} on <strong>${fmtDate(t.lastIncrementDate,"dd-mm-yyyy")}</strong> which ${willRaise} ${hisHer(g)} pay to Rs. <strong>${inr(t.lastBasicPay)}</strong> p.m. up to the date of ${hisHer(g)} Superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong>`;
+  } else {
+    clauseB = `(b). ${HisHer(g)} last increment before retirement in the aforesaid scale was due on <strong>NIL</strong> FOR which ${hisHer(g)} pay Rs. <strong>${inr(t.lastBasicPay)}</strong> p.m. <strong>WILL CONTINUE</strong> up to the date of ${hisHer(g)} Superannuation on <strong>${c.dor ? fmtDate(c.dorStr,"dd-mm-yyyy") : ""}</strong>`;
+  }
+
+  return pageWrap(`
+    <div style="font-family:'Times New Roman', Times, serif;">
+      <p class="small center">(To be filled in by the HOI / Administrator / Secretary / Sub Inspector-Circle)</p>
+      <h2 class="doc-title" style="margin-top:2px;">PAY CERTIFICATE</h2>
+      <p class="center small"><strong>(For Retirement / Death Case only)</strong></p>
+      
+      <p style="margin-top:15px;">Pay certificate of ${MrMrs(g)} <strong>${upper(blank(t.staffName))}</strong> Designation <strong>${blank(t.designation)}</strong> of <strong>${blank(proper(t.schoolName))}</strong> (Name of the Institution) for the purpose of Pension / Gratuity / Family Pension.</p>
+      
+      <p><strong>PAY</strong></p>
+      <div style="padding-left:10px; line-height:1.6;">
+        <div>1. (a) The Basic pay of ${MrMrs(g)} <strong>${upper(blank(t.staffName))}</strong> as on <strong>${lastJulyStr}</strong> ${wasIs} Rs. <strong>${inr(t.lastButBasicPay)}</strong> p.m. in the scale of pay of Rs. <strong>${blank(c.payLevel)}</strong></div>
+        <div>${clauseB}</div>
+        <div>(c) ${heShe(g)} ${today >= (c.dor||new Date()) ? "drew" : "draws"} a Special Pay of Rs. <strong>NIL</strong> in addition to ${hisHer(g)} Basic Pay in the aforesaid scale,</div>
+        <div>(d) ${heShe(g)} ${today >= (c.dor||new Date()) ? "drew" : "draws"} the following elements viz.</div>
+        <div style="padding-left:20px;">
+          (i) D.A. - Rs. <strong>${inr(Math.round((Number(t.lastBasicPay)||0)*(Number(t.daPercent)||0)/100))}</strong> @ ${blank(t.daPercent)}%<br>
+          (ii) HRA - Rs. <strong>${inr(c.hraAmount)}</strong><br>
+          (iii) M.A. - Rs. <strong>500/-</strong><br>
+          (iv) __________________________________________
+        </div>
+        <div style="margin-top:4px;">Which have been declared as pay for the purpose of pension and other retirement benefits.</div>
+      </div>
+      
+      <p style="margin-top:12px;"><strong>RECOVERIES OF LOANS AND ADVANCES</strong></p>
+      <p>Loans /Advances of Rs ________________ was sanctioned for ________________ of which ________________ instalment have been recovered up to ________________ @Rs ________________ and further ________________ instalments @Rs. ________________ will be recovered up to the date of Superannuation leaving a balance of @Rs ________________ as outstanding on the date of Superannuation to be recovered from Gratuity.</p>
+      
+      <p style="margin-top:12px;"><strong>OVERDRAWALS OF PAY AND ALLOWANCES ETC.</strong></p>
+      <p>${MrMrs(g)} ________________ had overdrawn an amount of Rs ________________ on account of ________________ of which Rs. ________________ shall be recovered up to the date of Superannuation leaving a balance of Rs. ________________ as outstanding on the date of Superannuation to be covered from Gratuity.</p>
+      
+      <p style="margin-top:12px;">All outstanding dues, as on the date of Superannuation, shall be recovered from the amount of gratuity and relief on pension straightway by the Director of Pension, Provident Fund &amp; Group Ins.</p>
+      
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:35px;">
+        <div>Date: _____________________</div>
+        <div class="sig-box">
+          <div class="sig-line">Signature of the HOI<br>Office Seal</div>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function docFLP(t,c){
+  const g=t.gender;
+  return pageWrap(`
+    <p><strong>To</strong><br>The District Inspector of Schools (S.E.), Bankura.<br>Post &amp; District, Bankura.</p>
+    <p><strong>Subject:</strong> Submission of application for sanctioning Pension, Gratuity and other admissible retirement benefits of ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))}.</p>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
+    <p>Sir,</p>
+    <p>I would like to submit the original service book along with all other relevant papers of ${MrMrs(g)} ${proper(t.staffName)}; ${proper(t.designation)} of this school for your kind acceptance, so as to arrange for taking necessary steps for sanctioning the Pension, Gratuity and other admissible retirement benefits in favour of ${himHer(g)} (which has been duly e-submitted and forwarded to your end) at your earliest, and oblige.</p>
+    <p>It also may be mentioned for your kind information that ${heshe(g)} will retire from ${hisHer(g)} service due to superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} [a.n.].</p>
+    <p>Please arrange and do the needful.</p>
+    <p>With Thanks.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:6mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
+        <div class="sig-line">Signature of the HOI</div>
+      </div>
+    </div>
+    <p style="margin-top:8mm;"><strong>Enclosures [In Duplicate]:</strong></p>
+    <ol class="items small">
+      <li>Original and Copy of Service Book of the employee.</li>
+      <li>e-submitted forms - Part-A, Part-B, Part-C, Part-D, Part-E, ANNEXURE-I [As per ROPA-19]</li>
+      <li>Copy of School Recognition Memos.</li>
+      <li>Duly attested Joint photograph of the employee and Spouse.</li>
+      <li>Duly attested specimen signature of the employee.</li>
+      <li>Various Nomination Forms filled up by the employee.</li>
+      <li>Age proof and all academic certificates of the employee.</li>
+      <li>Approval(s) of Appointment of the employee.</li>
+      <li>All I.P.F.(s) of ROPA - 1998, 2009, 2019 in Original with option and one set Xerox.</li>
+      <li>Declaration and Statement of HRA jointly drawn by the employee and spouse (if applicable).</li>
+      <li>Certificate regarding employment / non-employment of spouse and HRA.</li>
+      <li>Pay Certificate (Part-C in format).</li>
+      <li>No Liabilities Certificate (in format).</li>
+      <li>Particulars of Spouse such as document regarding proof of DOB, Marriage, etc.</li>
+      <li>Documents regarding Refund / Adjustment of Overpayment of salary, if any.</li>
+    </ol>
+  `);
+}
+
+function docFLCHO(t,c){
+  const g=t.gender;
+  const mainPara = c.isResignation ?
+    `I / we would like to inform you that ${proper(t.staffName)}; Ex-${proper(t.designation)} resigned from the post of ${proper(t.designation)} on the afternoon of ${blank(fmtDate(t.chargeHandOverDate,"dd-mm-yyyy"))}, and ${hisHer(g)} resignation from the post of ${proper(t.designation)} has been approved and accepted in M.C.R. / Administrator Order No. ______ &amp; Dated ______, w.e.f. ${fmtD(c.chargeExecDatePlus1,"dd-mm-yyyy")}. From that date ${proper(t.staffName)} will act as ${blank(t.chargeHandOverToPost)} of this school.` :
+    `I / we would like to inform you that ${proper(t.staffName)}; ${new Date()>c.dor ? `Ex-${proper(t.designation)} retired` : `will retire from the post of ${proper(t.designation)}`} from ${hisHer(g)} service upon reaching superannuation on the afternoon of ${c.dor?fmtDate(c.dorStr,"dd-mmm-yyyy"):""}. It also may be noted that effective ${fmtD(c.dorPlus1,"mmmm d,yyyy")}, ${blank(proper(t.chargeHandOverToName))}; ${blank(t.chargeHandOverToPost)} will assume / has assumed the role of ${blank(t.chargeHandOverToPost)} of this school.`;
+  return pageWrap(`
+    <p><strong>To</strong><br>The District Inspector of Schools (S.E.), Bankura.<br>Post &amp; District, Bankura.</p>
+    <p><strong>Subject:</strong> Charge Hand Over / Take Over Request in e-Pension Portal.</p>
+    <p class="ref-line">Ref: Existing user ID: ${blank(t.currentUserId)}</p>
+    <p>Sir,</p>
+    <p>${mainPara}</p>
+    <p>It also may be mentioned for your kind information that an online Charge Hand Over / Take Over request has been submitted to your end from this school through user ID ${blank(t.currentUserId)} associated with ${proper(t.staffName)} of ${proper(t.schoolName)} (DISE Code: ${blank(t.diseCode)}). Please accept, approve and do the needful from your end at the earliest.</p>
+    <p>You are requested to take necessary arrangements in this regard at your earliest.</p>
+    <p>With Thanks.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:6mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
+        <div class="sig-line">Signature of the HOI</div>
+      </div>
+    </div>
+  `);
+}
+
+function docAPPNOLIA(t,c){
+  const through = employeeThrough(t);
+  return pageWrap(`
+    <p><strong>To</strong><br>The District Inspector of Schools (S.E.), Bankura.<br>Post &amp; District, Bankura.</p>
+    <p><strong>Through</strong><br>The ${blank(through)}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
+    <p><strong>Subject:</strong> Request for issuing of 'No Liability Certificate' for releasing pension, Gratuity and other admissible retirement benefits in favour of me.</p>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
+    <p>Sir,</p>
+    <p>I would like to inform you that I, ${proper(t.staffName)}; Ex-${proper(t.designation)}, retired from my service from this school ${proper(t.schoolName)} upon reaching superannuation on the afternoon of ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""}.</p>
+    <p>It also may be mentioned for your kind information that my PPO has been issued from the end of DPPG vide PPO No: ${blank(t.ppoNo)} ; Memo No: ${blank(proper(t.ppoMemo))}.</p>
+    <p>Hence you are requested to take necessary arrangements for issuing of 'No Liability Certificate' for releasing pension, Gratuity and other admissible retirement benefits in favour of me.</p>
+    <p>Please arrange and do the needful at your earliest, by which my Pension, Gratuity and other admissible retirement benefits may be released from the competent authority in due time.</p>
+    <p>With Thanks.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:6mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
+        <div class="sig-line">${blank(proper(t.staffName))}<br>${blank(t.designation)} [Retired]<br>${blank(proper(t.schoolName))}</div>
+      </div>
+    </div>
+    <p style="margin-top:6mm;"><strong>Enclosures:</strong></p>
+    <ol class="items small"><li>Photo Copy of PPO.</li></ol>
+    <div class="sig-block-right" style="margin-top:10mm;">
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI</div>
+      </div>
+    </div>
+  `);
+}
+
+function docFLNOLIACPC(t,c){
+  const through = employeeThrough(t);
+  return pageWrap(`
+    <p><strong>To</strong><br>The Circle Project Co-ordinator<br>${blank(proper(t.cpcName))}</p>
+    <p><strong>Through</strong><br>The ${blank(through)}<br>${blank(proper(t.schoolName))}<br>${blank(proper(t.schoolAddress))}</p>
+    <p><strong>Subject:</strong> Request for issuance of 'No Liability Certificate' in favour of ${proper(t.staffName)}; Ex-${proper(t.designation)} for releasing pension in connection with the submission of U.C. on different grants sanctioned by SSM in favour of ${proper(t.schoolName)}; UDISE Code - ${blank(t.diseCode)}.</p>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
+    <p>Sir / Madam,</p>
+    <p>I, ${proper(t.staffName)}; Ex-${proper(t.designation)}, would like to inform you that I retired from my service from ${proper(t.schoolName)} on attaining the age of superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} [A.N.]</p>
+    <p>It also may be noted that I rendered my service in this school to the post of ${proper(t.designation)} for the period from ${blank(fmtDate(t.dojThisSchool,"dd-mm-yyyy"))} to ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} (Last Date of Service), and no Utilization Certificate on different grants sanctioned in favour of this school by SSM is pending for submission after utilization during my service period. It also may be mentioned for your kind information that my PPO has been issued from the end of DPPG vide PPO No: ${blank(t.ppoNo)} ; Memo No: ${blank(proper(t.ppoMemo))}.</p>
+    <p>Hence you are requested to take necessary arrangements for issuance of 'No Liability Certificate' in this regard, by which my Pension, Gratuity and other admissible retirement benefits may be released from the end of the competent authority at the earliest.</p>
+    <p>With Thanks.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:6mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
+        <div class="sig-line">${blank(proper(t.staffName))}<br>${blank(t.designation)} [Retired]<br>${blank(proper(t.schoolName))}</div>
+      </div>
+    </div>
+    <p style="margin-top:6mm;"><strong>Enclosures:</strong></p>
+    <ol class="items small"><li>Photo Copy of PPO.</li></ol>
+    <div class="sig-block-right" style="margin-top:10mm;">
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI</div>
+      </div>
+    </div>
+  `);
+}
+
+function docFLNOLIA(t,c){
+  const g=t.gender;
+  return pageWrap(`
+    <p><strong>To</strong><br>The District Inspector of Schools (S.E.), Bankura.<br>Post &amp; District, Bankura.</p>
+    <p><strong>Subject:</strong> Request for issuing of 'No Liability Certificate' for releasing pension, Gratuity and other admissible retirement benefits in favour of ${proper(t.staffName)}; ${proper(t.designation)}; Retired.</p>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
+    <p>Sir,</p>
+    <p>I would like to inform you that ${proper(t.staffName)}; ${proper(t.designation)}, retired from ${hisHer(g)} service from ${proper(t.schoolName)} on attaining the age of superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} [A.N.]</p>
+    <p>It also may be mentioned for your kind information that ${hisHer(g)} PPO has been issued from the end of DPPG vide PPO No: ${blank(t.ppoNo)} ; Memo No: ${blank(proper(t.ppoMemo))}. Also, request for issuing No Liability Certificate in favour of ${himHer(g)} has been duly e-submitted and forwarded to your end for your kind acceptance.</p>
+    <p>You are requested to take necessary arrangements in this regard at your earliest, by which ${hisHer(g)} Pension, Gratuity and other admissible retirement benefits may be released from the competent authority in due time.</p>
+    <p>With Thanks.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:6mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
+        <div class="sig-line">Signature of the HOI</div>
+      </div>
+    </div>
+    <p style="margin-top:8mm;"><strong>Enclosures:</strong></p>
+    <ol class="items small">
+      <li>Photo Copy of PPO.</li>
+      <li>Application of the Pensioner.</li>
+      <li>Online No Liability Certificate.</li>
+      <li>Certificate issued by HOI / Administrator / President [M.C.]</li>
+      ${["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"].includes(t.designation)? `<li>NOC issued from the end of the concerned CPC</li><li>Charge Hand Over Copy</li>`:""}
+    </ol>
+  `);
+}
+
+function docNOLIACERT(t,c){
+  const g=t.gender;
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">To Whom It May Concern</h2>
+    <h3 class="doc-sub">Certificate regarding No Liability</h3>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
+    <p><strong>Certified that -</strong></p>
+    <ol class="items">
+      <li>${proper(t.staffName)}; Ex-${proper(t.designation)} [duly retired from ${hisHer(g)} service from ${proper(t.schoolName)} due to superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} (a.n.)] has no liabilities either in cash or kind with the school or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F. which is yet to be recovered from ${hisHer(g)} Gratuity &amp; Pension Relief, in addition to the amount mentioned in ${hisHer(g)} pay certificate.</li>
+      <li>No Court Case / Departmental Proceeding is pending against ${himHer(g)}.</li>
+      <li>No Provisional Pension has been sanctioned to the employee.</li>
+      <li>No Provisional Gratuity has been sanctioned to the employee.</li>
+    </ol>
+    <div class="sig-block-right" style="margin-top:16mm;">
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI / Office Seal</div>
+      </div>
+    </div>
+  `);
+}
+
+function docRESC(t,c){
+  const g = t.gender;
+  const eventDate = c.isResignation ? c.chargeExecDate : c.dor;
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">Resolution Adopted by M.C. / Administrator Order</h2>
+    <ol class="items">
+      <li>On account of the upcoming ${blank(t.chargeHandOverCause)} of ${proper(t.staffName)}, existing ${proper(t.designation)} of ${proper(t.schoolName)}, on ${fmtD(eventDate,"dd-mm-yyyy")} [a.n.], ${blank(proper(t.chargeHandOverToName))}; Assistant Teacher / HM assumed the charge as ${blank(t.chargeHandOverToPost)} (as per rule) of this school on ${blank(fmtDate(t.chargeHandOverDate,"dd-mm-yyyy"))} from the outgoing ${proper(t.designation)}.</li>
+    </ol>
+    <p>After proper physical verification of related school documents, it is observed that -</p>
+    <ol class="items" type="i">
+      <li>the existing ${proper(t.designation)}; ${proper(t.staffName)} of this school has no liabilities either in cash or kind with the school, A.I./S(S.E.), ${proper(t.schoolSubDiv)} or D.I./S(S.E.), Bankura in respect of over-drawal of salary, non-recovery of loans and advance against G.P.F. which is yet to be recovered from ${hisHer(g)} Gratuity &amp; Pension Relief in addition to the amount mentioned in ${hisHer(g)} pay certificate.</li>
+      <li>No Court Case / Departmental Proceeding is pending against ${himHer(g)}.</li>
+      <li>No Provisional Pension has been sanctioned to ${himHer(g)}.</li>
+      <li>No Provisional Gratuity has been sanctioned to ${himHer(g)}.</li>
+      <li>It also may be noted that ${heshe(g)} rendered service acceptably in this school to the post of ${proper(t.designation)} for the period from ${blank(fmtDate(t.dojThisSchool,"dd-mm-yyyy"))} to till date, and no Utilization Certificate on different grants sanctioned in favour of this school by SSM and other departments is pending for submission after utilization during ${hisHer(g)} service period. Cash Books, all Ledgers, Pass Book, various record books, service books, etc. are kept in proper order and up-to-date. Assets as per Stock Register agree with physical verification. Presently no litigation is found about any matter in this school.</li>
+      <li>Mid-Day-Meal is running smoothly in this school. Stock (CB) of Rice on this date as per record &amp; physical verification: ______________ kg.</li>
+      <li>Details of Closing Balance in various bank account(s):
+        <table><tr><th>Sl</th><th>Bank A/C No.</th><th>Bank &amp; Branch Name</th><th>Closing Balance (Rs.)</th><th>Purpose of A/C</th></tr>
+        <tr><td>1.</td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>2.</td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>3.</td><td></td><td></td><td></td><td></td></tr></table>
+      </li>
+    </ol>
+    <p>After approval of the above matters, it is suggested / advised / ordered / decided unanimously that the incoming Teacher-In-Write of this school will perform the following activities on or after ${fmtD(c.dorPlus1,"dd-mm-yyyy")}:</p>
+    <ol class="items">
+      <li>To take necessary arrangement for constitution of Staff Council, Academic Council &amp; Finance Sub-Committee with immediate effect as per Rule.</li>
+      <li>To take necessary arrangement for changing the Operator of all the aforesaid bank accounts, by which the same will be operated jointly by the Teacher-In-Charge, ${blank(proper(t.chargeHandOverToName))}, instead of ${proper(t.staffName)}; ${proper(t.designation)}, and the Administrator / President as earlier.</li>
+    </ol>
+    <div class="sig-block-right" style="margin-top:14mm;">
+      <div class="sig-box">
+        <div class="sig-line">Signature of Administrator / President [M.C.] — Office Seal</div>
+      </div>
+    </div>
+  `);
+}
+
+function docCHO(t,c){
+  const g = t.gender;
+  const eventDate = c.isResignation ? c.chargeExecDate : c.dor;
+  const eventDatePlus1 = c.isResignation ? c.chargeExecDatePlus1 : c.dorPlus1;
+  const fmt = d => fmtD(d,"dd-mm-yyyy");
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">Charge Hand Over</h2>
+    <p>I, ${proper(t.staffName)}; outgoing ${proper(t.designation)} of ${proper(t.schoolName)}, herewith hand over the charges and all accounts of this school to the incoming ${blank(t.chargeHandOverToPost)}; ${blank(proper(t.chargeHandOverToName))} of ${proper(t.schoolName)}, on account of my upcoming ${blank(t.chargeHandOverCause)} on ${fmt(eventDate)} ${c.isResignation?"":"[a.n.]"}.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:8mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line">${blank(proper(t.staffName))}<br>${blank(t.designation)} ${c.isResignation?`[To be resigned on ${fmt(eventDatePlus1)}]`:`[To be retired on the afternoon of ${fmt(eventDate)}]`}<br>${blank(proper(t.schoolName))}</div>
+      </div>
+    </div>
+    <hr style="margin:10mm 0;border:none;border-top:1px dashed #999;">
+    <h2 class="doc-title">Charge Take Over</h2>
+    <p>I, ${blank(proper(t.chargeHandOverToName))}, incoming ${blank(t.chargeHandOverToPost)} w.e.f. ${fmt(eventDatePlus1)} of ${proper(t.schoolName)}, herewith take over the charges and all accounts of this school from the outgoing ${proper(t.designation)}, ${proper(t.staffName)} of ${proper(t.schoolName)} on account of ${hisHer(g)} ${blank(t.chargeHandOverCause)} on ${fmt(eventDate)} [a.n.].</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:8mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line">${blank(t.chargeHandOverToPost)} [w.e.f. ${fmt(eventDatePlus1)}]<br>${blank(proper(t.schoolName))}</div>
+      </div>
+    </div>
+    <p style="margin-top:10mm;text-align:center;letter-spacing:3px;">C O U N T E R S I G N E D</p>
+    <div style="display:flex; justify-content:center; margin-top:6mm;">
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI<br>${blank(proper(t.schoolName))}</div>
+      </div>
+    </div>
+  `);
+}
+
+function docCPC(t,c){
+  const g = t.gender;
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">To Whom It May Concern</h2>
+    <h3 class="doc-sub">Certificate regarding No Liability re: Submission of U.C. on different grants sanctioned by SSM in favour of ${blank(proper(t.schoolName))} till ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""}</h3>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)} ; PPO No: ${blank(t.ppoNo)}</p>
+    <p><strong>Certified that -</strong></p>
+    <p>${proper(t.staffName)}; Ex-${proper(t.designation)} [duly retired from ${hisHer(g)} service due to superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} (a.n.)] has no liabilities in connection with the submission of Utilization Certificate on different grants sanctioned by SSM in favour of this school i.e. ${proper(t.schoolName)}, and for such grants after utilization no Utilization Certificate is pending for submission during ${hisHer(g)} service period, i.e. till ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""}.</p>
+    <div class="sig-block-right" style="margin-top:16mm;">
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI / Office Seal</div>
+      </div>
+    </div>
+  `);
+}
+
+const DOC_RENDERERS = {
+  COVER: docCOVER, SB: docSB, AB: docAB, E: docE, D: docD,
+  HRAD: docHRAD, HRAC: docHRAC, NOLIA: docNOLIA, PAYC: docPAYC,
+  FLP: docFLP, FLCHO: docFLCHO, APPNOLIA: docAPPNOLIA,
+  FLNOLIACPC: docFLNOLIACPC, FLNOLIA: docFLNOLIA, NOLIACERT: docNOLIACERT,
+  RESC: docRESC, CHO: docCHO, CPC: docCPC
+};
+
+const DOC_LIST = [
+  { id:"COVER",       name:"Cover Page",              sub:"Case file label" },
+  { id:"SB",          name:"Service Book Certificates", sub:"Certificates [Service Book] + Leave" },
+  { id:"AB",          name:"Enclosure A / B",          sub:"Specimen signatures & photographs" },
+  { id:"E",           name:"Enclosure E",               sub:"Nomination — Life Time Arrear of Pension" },
+  { id:"D",           name:"Enclosure D",               sub:"Nomination — Death-cum-Retirement Gratuity" },
+  { id:"HRAD",        name:"HRA Declaration",           sub:"Employee declaration of spouse HRA" },
+  { id:"HRAC",        name:"HRA Certificate",           sub:"Employment / non-employment & HRA of spouse" },
+  { id:"NOLIA",       name:"Liability Certificate",     sub:"Issued by appointing authority on retirement" },
+  { id:"PAYC",        name:"Pay Certificate",           sub:"For pension / gratuity / family pension" },
+  { id:"FLP",         name:"Forwarding Letter (Pension)", sub:"To D.I. of Schools — submission of case" },
+  { id:"FLCHO",       name:"Forwarding Letter (Charge)", sub:"Charge hand over / take over request" },
+  { id:"APPNOLIA",    name:"Application for NLC",       sub:"Pensioner's request for No Liability Certificate" },
+  { id:"FLNOLIACPC",  name:"Forwarding Letter (NLC–CPC)", sub:"To Circle Project Co-ordinator" },
+  { id:"FLNOLIA",     name:"Forwarding Letter (NLC)",   sub:"To D.I. of Schools — No Liability Certificate" },
+  { id:"NOLIACERT",   name:"No Liability Certificate",  sub:"To Whom It May Concern" },
+  { id:"RESC",        name:"Resolution",                sub:"M.C. / Administrator Order" },
+  { id:"CHO",         name:"Charge Hand/Take Over",     sub:"Charge hand over & take over note" },
+  { id:"CPC",         name:"No Liability (UC/SSM)",     sub:"To Whom It May Concern — utilization certificate" }
+];
+
+/* =========================================================================
+   STORAGE ADAPTER
+   ========================================================================= */
+const INDEX_KEY = "pensioners:index";
+
+const store = {
+  async get(k) {
+    try {
+      if (window.storage && typeof window.storage.get === 'function') {
+        return await window.storage.get(k);
       }
-    }
+    } catch(e) {}
+    const v = localStorage.getItem(k);
+    return v ? { value: v } : null;
+  },
+  async set(k, v) {
+    try {
+      if (window.storage && typeof window.storage.set === 'function') {
+        return await window.storage.set(k, v);
+      }
+    } catch(e) {}
+    localStorage.setItem(k, v);
+  },
+  async delete(k) {
+    try {
+      if (window.storage && typeof window.storage.delete === 'function') {
+        return await window.storage.delete(k);
+      }
+    } catch(e) {}
+    localStorage.removeItem(k);
+  }
+};
 
-    /* =========================================================================
-       EVENT WIRING
-       ========================================================================= */
-    $$(".tab").forEach(t => t.addEventListener("click", () => {
-      activeTab = t.dataset.tab;
-      render();
-    }));
+async function loadIndex(){
+  try{
+    const r = await store.get(INDEX_KEY);
+    return r ? JSON.parse(r.value) : [];
+  }catch(e){ return []; }
+}
+async function saveIndex(ids){
+  await store.set(INDEX_KEY, JSON.stringify(ids));
+}
+async function loadRecord(id){
+  try{
+    const r = await store.get("pensioner:"+id);
+    return r ? JSON.parse(r.value) : null;
+  }catch(e){ return null; }
+}
+async function saveRecord(rec){
+  await store.set("pensioner:"+rec.id, JSON.stringify(rec));
+}
+async function deleteRecordStorage(id){
+  try{ await store.delete("pensioner:"+id); }catch(e){}
+  const ids = (await loadIndex()).filter(x=>x!==id);
+  await saveIndex(ids);
+}
 
-    $("#btnPrintOne").addEventListener("click", () => window.print());
+/* =========================================================================
+   APP STATE & RENDER LOGIC
+   ========================================================================= */
+let allRecords = [];
+let current = defaultRecord();
+let originalSnapshot = JSON.stringify(current);
+let activeTab = "form";
+let activeDoc = "COVER";
+let dirty = false;
 
-    $("#btnNew").addEventListener("click", () => {
-      if (dirty && !confirm("Discard unsaved changes and start a new record?")) return;
-      current = defaultRecord();
-      originalSnapshot = JSON.stringify(current);
-      dirty = false;
-      activeTab = "form";
-      render();
-      renderRecordList();
-    });
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-    $("#btnSave").addEventListener("click", async () => {
-      if (!current.staffName) { alert("Please enter the employee's Name before saving."); return; }
-      if (!current.id) current.id = newId();
-      current.savedAt = new Date().toISOString();
-      await saveRecord(current);
-      
-      const ids = await loadIndex();
-      if (!ids.includes(current.id)) { ids.push(current.id); await saveIndex(ids); }
-      
-      originalSnapshot = JSON.stringify(current);
-      dirty = false;
-      await renderRecordList();
-      render();
-      flashStatus("Saved " + proper(current.staffName) + " successfully.", "ok");
-    });
+function newId(){ return "p_"+Date.now()+"_"+Math.random().toString(36).slice(2,8); }
 
-    $("#btnResetForm").addEventListener("click", () => {
-      if (!confirm("Undo all unsaved changes on this record?")) return;
-      current = JSON.parse(originalSnapshot);
-      dirty = false;
-      render();
-    });
+async function refreshRecordList(){
+  const ids = await loadIndex();
+  const recs = [];
+  for(const id of ids){
+    const r = await loadRecord(id);
+    if(r) recs.push(r);
+  }
+  recs.sort((a,b)=> (b.savedAt||"").localeCompare(a.savedAt||""));
+  allRecords = recs;
+  renderRecordList();
+}
 
-    $("#btnDuplicate").addEventListener("click", () => {
-      current = JSON.parse(JSON.stringify(current));
-      current.id = null;
-      current.savedAt = null;
-      current.staffName = current.staffName ? current.staffName + " (copy)" : "";
+function renderRecordList(){
+  const q = ($("#searchBox").value||"").toLowerCase();
+  const list = $("#recList");
+  const filtered = allRecords.filter(r => !q || (r.staffName||"").toLowerCase().includes(q) || (r.employeeCode||"").toLowerCase().includes(q) || (r.schoolName||"").toLowerCase().includes(q));
+  list.innerHTML = filtered.map(r => `
+    <div class="rec-item ${current.id===r.id?'active':''}" data-id="${r.id}">
+      <span class="nm">${escapeHtml(proper(r.staffName)||"(unnamed)")}</span>
+      <span class="meta">${escapeHtml(r.designation||"")} · ${escapeHtml(proper(r.schoolName)||"")}</span>
+    </div>`).join("") || `<div class="meta" style="color:#8fa5ba;padding:8px 4px;">No saved records yet.</div>`;
+  $$(".rec-item").forEach(el => el.addEventListener("click", ()=> selectRecord(el.dataset.id)));
+}
+
+function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+
+async function selectRecord(id){
+  if(dirty && !confirm("You have unsaved changes on the current record. Discard them and switch?")) return;
+  const r = await loadRecord(id);
+  if(!r) return;
+  current = r;
+  originalSnapshot = JSON.stringify(current);
+  dirty = false;
+  activeTab = "form";
+  render();
+}
+
+function render(){
+  $("#topTitle").textContent = current.id ? (proper(current.staffName)||"(unnamed)") + " — " + (current.designation||"") : "New Pensioner Record";
+  $("#btnDuplicate").style.display = current.id ? "inline-block" : "none";
+  $("#btnDelete").style.display = current.id ? "inline-block" : "none";
+  $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab===activeTab));
+  $("#formActions").style.display = activeTab==="form" ? "flex" : "none";
+  renderRecordList();
+
+  const content = $("#content");
+  if(activeTab==="form") content.innerHTML = renderForm();
+  else if(activeTab==="summary") content.innerHTML = renderSummary();
+  else content.innerHTML = renderDocs();
+
+  if(activeTab==="form") wireFormInputs();
+  if(activeTab==="docs") wireDocButtons();
+  updateSaveStatus();
+}
+
+function renderForm(){
+  return SECTIONS.map(sec => `
+    <fieldset>
+      <legend>${sec.title}</legend>
+      <div class="form-grid">
+        ${sec.fields.map(f => renderField(f)).join("")}
+      </div>
+    </fieldset>
+  `).join("") + renderLiveDorHint();
+}
+
+function renderLiveDorHint(){
+  const c = compute(current);
+  return `<div class="sum-card" style="max-width:320px;"><div class="lbl">Auto-computed Date of Retirement</div><div class="val" style="font-size:15px;">${c.dor ? fmtDate(c.dorStr,"dd-mmmm-yyyy") : "Enter Date of Birth"}</div></div>`;
+}
+
+function renderField(f){
+  const val = current[f.id]===undefined ? "" : current[f.id];
+  let input;
+  if(f.type==="select"){
+    input = `<select data-field="${f.id}"><option value="">-- select --</option>${f.options.map(o=>`<option value="${escapeHtml(o)}" ${String(val)===String(o)?"selected":""}>${escapeHtml(o)}</option>`).join("")}</select>`;
+  } else if(f.type==="textarea"){
+    input = `<textarea data-field="${f.id}">${escapeHtml(val)}</textarea>`;
+  } else {
+    input = `<input type="${f.type}" data-field="${f.id}" value="${escapeHtml(val)}">`;
+  }
+  const hint = f.hint ? `<div class="hint">${f.hint}</div>` : "";
+  return `<div class="field"><label>${f.label}</label>${input}${hint}</div>`;
+}
+
+function wireFormInputs(){
+  $$("[data-field]").forEach(el=>{
+    el.addEventListener("input", ()=>{
+      current[el.dataset.field] = el.value;
       dirty = true;
-      originalSnapshot = JSON.stringify(defaultRecord());
-      activeTab = "form";
-      render();
+      updateSaveStatus();
+      const hint = $("#content .sum-card .val");
+      if(hint){ const c = compute(current); hint.textContent = c.dor ? fmtDate(c.dorStr,"dd-mmmm-yyyy") : "Enter Date of Birth"; }
     });
-
-    $("#btnDelete").addEventListener("click", async () => {
-      if (!current.id) return;
-      if (!confirm("Delete this pensioner's record permanently?")) return;
-      await deleteRecordStorage(current.id);
-      current = defaultRecord();
-      originalSnapshot = JSON.stringify(current);
-      dirty = false;
-      activeTab = "form";
-      await renderRecordList();
-      render();
+    el.addEventListener("change", ()=>{
+      current[el.dataset.field] = el.value;
+      dirty = true; updateSaveStatus();
     });
+  });
+}
 
-    $("#searchBox").addEventListener("input", renderRecordList);
-    $("#btnToggleSidebar").addEventListener("click", () => {
-      const sidebar = $(".sidebar");
-      sidebar.style.display = sidebar.style.display === "none" ? "flex" : "none";
-    });
+function updateSaveStatus(){
+  const el = $("#saveStatus");
+  if(!el) return;
+  el.textContent = dirty ? "Unsaved changes" : (current.id ? "All changes saved" : "");
+  el.style.color = dirty ? "#a4322a" : "#2e7d4f";
+}
 
-    function flashStatus(msg, kind) {
-      const el = $("#sideStatus");
-      el.innerHTML = `<div class="status ${kind === 'ok' ? 'ok' : 'err'}">${escapeHtml(msg)}</div>`;
-      setTimeout(() => { el.innerHTML = ""; }, 3500);
-    }
+function renderSummary(){
+  const c = compute(current);
+  const cards = [
+    ["Date of Retirement", c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"—"],
+    ["Total Length of Service", c.totalLengthOfService || "—"],
+    ["Qualifying Service (half-years)", c.qualHalfYears || 0],
+    ["Reckonable Emoluments (Gratuity)", "Rs. "+ (inr(c.reckonableGratuity)||0)],
+    ["Gratuity Amount", "Rs. "+(inr(c.gratuityAmount)||0)],
+    ["Reckonable Emoluments (Pension)", "Rs. "+(inr(c.reckonablePension)||0)],
+    ["Pension Basic", "Rs. "+(inr(c.pensionBasic)||0)],
+    ["Commutation Amount", "Rs. "+(inr(c.commutationAmount)||0)],
+    ["Commuted Value of Pension (CVP)", "Rs. "+(inr(c.cvpAmount)||0)],
+    ["Retirement Total (One-Time)", "Rs. "+(inr(c.retirementTotalOneTime)||0)],
+    ["Total incl. PF Gross", "Rs. "+(inr(c.totalDuringRetirement)||0)],
+    ["Net Monthly Pension (Basic + DA + MA 500 − Commuted)", "Rs. "+(inr(c.monthlyPension)||0)],
+    ["Pay Level / Scale", c.payLevel || "—"],
+    ["HRA Amount", "Rs. "+(inr(c.hraAmount)||0)]
+  ];
+  return `<div class="summary-grid">` + cards.map(([l,v])=>`<div class="sum-card"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join("") + `</div>
+  <p class="hint" style="margin-top:14px;">These figures are calculated automatically from the data you entered, using the same formulas as the original workbook (ROPA-19 gratuity &amp; pension rules). Values update live as you edit the Data tab.</p>`;
+}
 
-    // Initialize Application
-    (async function init() {
-      await renderRecordList();
-      render();
-    })();
-  </script>
+function renderDocs(){
+  const c = compute(current);
+  const activeRenderer = DOC_RENDERERS[activeDoc];
+  const html = activeRenderer ? activeRenderer(current, c) : "";
+  return `
+  <div class="doc-layout">
+    <div class="doc-list">
+      ${DOC_LIST.map(d=>`<button class="doc-btn ${activeDoc===d.id?'active':''}" data-doc="${d.id}">${d.name}<small>${d.sub}</small></button>`).join("")}
+    </div>
+    <div class="doc-preview-wrap">
+      <div class="preview-toolbar">
+        <button class="btn btn-ghost" id="btnPrintOne">Print This Document</button>
+      </div>
+      <div class="print-area" id="printArea">${html}</div>
+    </div>
+  </div>`;
+}
+
+function wireDocButtons(){
+  $$(".doc-btn").forEach(b=>b.addEventListener("click", ()=>{ activeDoc=b.dataset.doc; render(); }));
+  const one = $("#btnPrintOne");
+  if(one) one.addEventListener("click", ()=> window.print());
+}
+
+/* =========================================================================
+   EVENT WIRING
+   ========================================================================= */
+$$(".tab").forEach(t=>t.addEventListener("click", async ()=>{
+  activeTab = t.dataset.tab;
+  render();
+}));
+
+$("#btnNew").addEventListener("click", async ()=>{
+  if(dirty && !confirm("Discard unsaved changes and start a new record?")) return;
+  current = defaultRecord();
+  originalSnapshot = JSON.stringify(current);
+  dirty = false;
+  activeTab = "form";
+  render();
+});
+
+$("#btnSave").addEventListener("click", async ()=>{
+  if(!current.staffName){ alert("Please enter the employee's Name of the Staff before saving."); return; }
+  if(!current.id) current.id = newId();
+  current.savedAt = new Date().toISOString();
+  await saveRecord(current);
+  const ids = await loadIndex();
+  if(!ids.includes(current.id)){ ids.push(current.id); await saveIndex(ids); }
+  originalSnapshot = JSON.stringify(current);
+  dirty = false;
+  await refreshRecordList();
+  render();
+  flashStatus("Saved "+ (proper(current.staffName)) + " successfully.", "ok");
+});
+
+$("#btnResetForm").addEventListener("click", ()=>{
+  if(!confirm("Undo all unsaved changes on this record?")) return;
+  current = JSON.parse(originalSnapshot);
+  dirty = false;
+  render();
+});
+
+$("#btnDuplicate").addEventListener("click", ()=>{
+  current = JSON.parse(JSON.stringify(current));
+  current.id = null;
+  current.savedAt = null;
+  current.staffName = current.staffName ? current.staffName + " (copy)" : "";
+  dirty = true;
+  originalSnapshot = JSON.stringify(defaultRecord());
+  activeTab = "form";
+  render();
+});
+
+$("#btnDelete").addEventListener("click", async ()=>{
+  if(!current.id) return;
+  if(!confirm("Delete this pensioner's record permanently? This cannot be undone.")) return;
+  await deleteRecordStorage(current.id);
+  current = defaultRecord();
+  originalSnapshot = JSON.stringify(current);
+  dirty = false;
+  activeTab = "form";
+  await refreshRecordList();
+  render();
+});
+
+$("#searchBox").addEventListener("input", renderRecordList);
+$("#btnToggleSidebar").addEventListener("click", ()=>{
+  document.querySelector(".sidebar").classList.toggle("open");
+});
+
+function flashStatus(msg, kind){
+  const el = $("#sideStatus");
+  el.innerHTML = `<div class="status ${kind==='ok'?'ok':'err'}">${escapeHtml(msg)}</div>`;
+  setTimeout(()=>{ el.innerHTML=""; }, 3500);
+}
+
+(async function init(){
+  await refreshRecordList();
+  render();
+})();
+</script>
 </body>
 </html>
