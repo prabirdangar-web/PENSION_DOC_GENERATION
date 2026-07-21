@@ -1,4 +1,88 @@
+function wireDocButtons(){
+  $$(".doc-btn").forEach(b=>b.addEventListener("click", ()=>{ activeDoc=b.dataset.doc; render(); }));
+  const one = $("#btnPrintOne");
+  if(one) one.addEventListener("click", ()=> window.print());
+}
+
 /* =========================================================================
+   EVENT WIRING
+   ========================================================================= */
+$$(".tab").forEach(t=>t.addEventListener("click", async ()=>{
+  activeTab = t.dataset.tab;
+  render();
+}));
+
+$("#btnNew").addEventListener("click", async ()=>{
+  if(dirty && !confirm("Discard unsaved changes and start a new record?")) return;
+  current = defaultRecord();
+  originalSnapshot = JSON.stringify(current);
+  dirty = false;
+  activeTab = "form";
+  render();
+});
+
+$("#btnSave").addEventListener("click", async ()=>{
+  if(!current.staffName){ alert("Please enter the employee's Name of the Staff before saving."); return; }
+  if(!current.id) current.id = newId();
+  current.savedAt = new Date().toISOString();
+  await saveRecord(current);
+  const ids = await loadIndex();
+  if(!ids.includes(current.id)){ ids.push(current.id); await saveIndex(ids); }
+  originalSnapshot = JSON.stringify(current);
+  dirty = false;
+  await refreshRecordList();
+  render();
+  flashStatus("Saved "+ (proper(current.staffName)) + " successfully.", "ok");
+});
+
+$("#btnResetForm").addEventListener("click", ()=>{
+  if(!confirm("Undo all unsaved changes on this record?")) return;
+  current = JSON.parse(originalSnapshot);
+  dirty = false;
+  render();
+});
+
+$("#btnDuplicate").addEventListener("click", ()=>{
+  current = JSON.parse(JSON.stringify(current));
+  current.id = null;
+  current.savedAt = null;
+  current.staffName = current.staffName ? current.staffName + " (copy)" : "";
+  dirty = true;
+  originalSnapshot = JSON.stringify(defaultRecord());
+  activeTab = "form";
+  render();
+});
+
+$("#btnDelete").addEventListener("click", async ()=>{
+  if(!current.id) return;
+  if(!confirm("Delete this pensioner's record permanently? This cannot be undone.")) return;
+  await deleteRecordStorage(current.id);
+  current = defaultRecord();
+  originalSnapshot = JSON.stringify(current);
+  dirty = false;
+  activeTab = "form";
+  await refreshRecordList();
+  render();
+});
+
+$("#searchBox").addEventListener("input", renderRecordList);
+$("#btnToggleSidebar").addEventListener("click", ()=>{
+  document.querySelector(".sidebar").classList.toggle("open");
+});
+
+function flashStatus(msg, kind){
+  const el = $("#sideStatus");
+  el.innerHTML = `<div class="status ${kind==='ok'?'ok':'err'}">${escapeHtml(msg)}</div>`;
+  setTimeout(()=>{ el.innerHTML=""; }, 3500);
+}
+
+(async function init(){
+  await refreshRecordList();
+  render();
+})();
+</script>
+</body>
+</html>/* =========================================================================
    PENSION DOCUMENT GENERATOR - FIXED DOCUMENT TEMPLATES
    Fixes for:
    1. Pay Certificate (NIL increment / continuation logic)
