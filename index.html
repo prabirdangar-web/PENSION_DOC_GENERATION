@@ -711,10 +711,10 @@ function docCOVER(t,c){
       <div style="margin:4mm 0; background:rgba(27,58,92,0.03); padding:4mm; border-radius:4px;">
         <table style="width:100%; margin:0; font-size:10.5pt; border:none;">
           <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE NAME:</td><td style="font-weight:bold; padding:4px 0; border:none; color:var(--navy-dark); font-size:11pt;">${blank(upper(t.staffName))}</td></tr>
-          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">DESIGNATION:</td><td style="font-weight:bold; padding:4px 0; border:none;">${blank(upper(t.designation))}</td></tr>
-          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">RETIREMENT DATE:</td><td style="font-weight:bold; padding:4px 0; border:none; color:#a4322a;">${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):'[DOB REQUIRED]'}</td></tr>
-          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE CODE:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.employeeCode)}</td></tr>
-          <tr style="border:none;"><td style="font-weight:bold; padding:4px 0; border:none; color:var(--muted);">APPLICATION ID:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.applicationId)}</td></tr>
+          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">DESIGNATION:</td><td style="font-weight:bold; padding:4px 0; border:none;">${blank(upper(t.designation))}</td></tr>
+          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">RETIREMENT DATE:</td><td style="font-weight:bold; padding:4px 0; border:none; color:#a4322a;">${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):'[DOB REQUIRED]'}</td></tr>
+          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE CODE:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.employeeCode)}</td></tr>
+          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">APPLICATION ID:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.applicationId)}</td></tr>
         </table>
       </div>
       
@@ -869,8 +869,8 @@ function docE(t,c){
       <h3 class="doc-sub" style="margin: 0 0 10px 0; font-weight:normal; font-size:10.5pt;">(To be furnished by the Employee)</h3>
       
       <p style="margin-bottom:4px;">Pension Disbursing Authority / HOI</p>
-      <p style="margin-bottom:4px;">Name of Bank / Treasury / Accountant General, West Bengal</p>
-      <p style="margin-bottom:12px;">(Place) ___________________________</p>
+      <p style="margin-bottom:4px;">Name of Bank / Treasury / Accountant General, West Bengal: <strong>${upper(blank(t.treasury))}</strong></p>
+      <p style="margin-bottom:12px;">(Place): <strong>${upper(blank(t.treasury))}</strong></p>
       
       <p style="margin-bottom:12px;">I <strong class="blank" style="min-width:350px;">${upper(blank(t.staffName))}</strong> (Name of the pensioner in Capital letters) hereby nominate the person named below under rule 5 of the Payment of Arrear of Pension (Nomination) Rules, 1986.</p>
       
@@ -956,7 +956,7 @@ function docD(t,c){
     if(i===0){
       row += `<td rowspan="${rowCount}" style="width:22%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
       row += `<td rowspan="${rowCount}" style="width:10%;" class="center">${blank(proper(t.spouseRelation))}</td>`;
-      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">${spouseAge ? `${spouseAge} Y+` : ""}<br><span style="font-size:8pt;">[DOB: ${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}]</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">${spouseAge ? `${spouseAge} Y+` : ""}<br><span style="font-size:8.pt;">[DOB: ${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}]</span></td>`;
       row += `<td rowspan="${rowCount}" style="width:10%;" class="center">100%</td>`;
       row += `<td rowspan="${rowCount}" style="width:12%;" class="center">Death, Divorce, Remarriage or Insanity</td>`;
     }
@@ -1895,4 +1895,3 @@ function flashStatus(msg, kind){
 </script>
 </body>
 </html>
-```[cite: 1]
