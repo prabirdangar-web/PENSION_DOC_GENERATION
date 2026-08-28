@@ -210,10 +210,17 @@
       <div class="sub">e-Pension Application &amp; Certificate Generator</div>
     </div>
     <button class="btn btn-primary btn-block" id="btnNew">+ New Pensioner Record</button>
+    <button class="btn btn-ghost btn-block" id="btnLoadSample">↺ Load Sample Record</button>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btn-ghost" id="btnExportJson" style="flex:1;">⬇ Export</button>
+      <button class="btn btn-ghost" id="btnExportAllJson" style="flex:1;">⬇ Export All</button>
+    </div>
+    <button class="btn btn-ghost btn-block" id="btnImportJson">⬆ Import JSON</button>
+    <input type="file" id="fileImportJson" accept="application/json,.json" style="display:none;">
     <input class="search-box" id="searchBox" placeholder="Search saved records...">
     <div class="rec-list" id="recList"></div>
     <div id="sideStatus"></div>
-    <div class="side-foot">Data is stored privately for your account and stays available across sessions. Nothing is shared with other users.</div>
+    <div class="side-foot">Data is stored privately for your account and stays available across sessions. Nothing is shared with other users. Use Export/Import to back up records as JSON files.</div>
   </div>
 
   <!-- MAIN -->
@@ -312,6 +319,8 @@ const SECTIONS = [
   fields:[
     {id:"lastBasicPay", label:"Last (Final) Basic Pay (Rs.)", type:"number", hint:"The final basic pay used for pension/gratuity — i.e. AFTER the last applicable 1st-July increment, if any."},
     {id:"lastButBasicPay", label:"Basic Pay Before Last Increment (Rs.)", type:"number", hint:"The basic pay as currently drawn, BEFORE the 1st-July increment referenced below. Same as Last Basic Pay if no further increment falls due before retirement."},
+    {id:"existingIncrementDate", label:"Existing Increment Date (\"as on\" date for Pay Cert)", type:"date", hint:"The 1st-July date on which the Basic Pay below was already confirmed/drawn — e.g. last year's increment. This fixes item 1(a) of the Pay Certificate, which used to guess today's date instead of an actual record date."},
+    {id:"existingIncrementAmount", label:"Basic Pay As On That Date (Rs.)", type:"number", hint:"Leave blank to reuse 'Basic Pay Before Last Increment' above."},
     {id:"lastIncrementDate", label:"Date of Last/Next 1st-July Increment", type:"date", hint:"Leave blank or equal to the increment-before date if no increment falls due before the date of retirement."},
     {id:"daPercent", label:"D.A. @ (%)", type:"number"},
     {id:"hraMode", label:"HRA Type", type:"select", options:["PERCENT","FIXED"], hint:"Choose PERCENT to enter a rate below, or FIXED to enter a flat amount."},
@@ -385,6 +394,79 @@ function defaultRecord(){
   d.chargeHandOverCause = CHARGE_CAUSES[0];
   d.chargeHandOverToPost = "TEACHER-IN-CHARGE";
   return d;
+}
+
+/* =========================================================================
+   SAMPLE RECORD (pre-filled from supplied data)
+   ========================================================================= */
+function sampleRecord(){
+  return Object.assign(defaultRecord(), {
+    schoolName: "CHHAGULIA SAMMILANI NEHRU HIGH SCHOOL [H.S.]",
+    schoolAddress: "P.O.-CHHAGULIA, P.S. & BLOCK-ONDA, SUV. DIV. BANKURA, DIST.-BANKURA, PIN-722152",
+    schoolSubDiv: "BANKURA",
+    schoolRecognisedDate: "1965-01-01",
+    schoolMail: "chhaguliasnhigh@gmail.com",
+    hoiMobile: "9732137381",
+    currentUserId: "HOISEBNK869",
+    diseCode: "19131308105",
+    treasury: "PURULIA",
+    hoiStatus: "TEACHER-IN-CHARGE",
+    adminStatus: "President [M.C.]",
+
+    staffName: "RANJIT KUMAR RAKSHIT",
+    gender: "MALE",
+    designation: "ASSISTANT TEACHER",
+    employeeCode: "WNEL5632",
+    applicationId: "12022504397",
+    employeeMobile: "7001699620",
+    dob: "1966-08-16",
+    lastGradePay: "4400",
+
+    prevSchool1: "",
+    prevSchool2: "",
+    dojFirst: "2006-04-19",
+    dojPrevSchool2: "2006-04-19",
+    dojThisSchool: "2006-04-19",
+    prevSchoolPost1: "",
+    prevSchoolPost2: "",
+    medicalLeave: "89",
+    halfPayLeave: "0",
+    extraOrdinaryLeave: "0",
+    specialLeave: "0",
+    hraOverdrawn: "",
+    challanNoDate: "",
+
+    lastBasicPay: "66500",
+    lastButBasicPay: "62700",
+    existingIncrementDate: "2025-07-01",
+    existingIncrementAmount: "62700",
+    lastIncrementDate: "2026-07-01",
+    daPercent: "18",
+    hraMode: "PERCENT",
+    hraPercentValue: "12",
+    hraFixedAmount: "3600",
+    commutationPercent: "0.3",
+    ppoNo: "12021320260130",
+    ppoMemo: "SEC/BNK/26/F/0651, DATE: 12-08-2026",
+    pfGross: "",
+
+    spouseName: "MAMATA SINGH RAKSHIT",
+    spouseRelation: "WIFE",
+    spouseStatus: "NOT IN SERVICE",
+    spouseOffice: "House number:141 Village: DHADKI, Post office: LAULARA, P.S.: PUNCHA, District: PURULIA, PIN:723151, State: West Bengal",
+    spouseDept: "",
+    spouseDoj: "",
+    spouseDesignation: "",
+    spouseDob: "1983-05-17",
+    selfSpouseAddress: "House number:141 Village: DHADKI, Post office: LAULARA, P.S.: PUNCHA, District: PURULIA, PIN:723151, State: West Bengal",
+
+    child1Name: "BARSHA RAKSHIT",
+    child1Relation: "DAUGHTER",
+    child1Dob: "2010-07-09",
+    child1GratuityShare: "",
+    child2Name: "", child2Relation: "SON", child2Dob: "", child2GratuityShare: "",
+    child3Name: "", child3Relation: "SON", child3Dob: "", child3GratuityShare: ""
+  });
 }
 
 /* =========================================================================
@@ -1056,11 +1138,12 @@ function docNOLIA(t,c){
 function docPAYC(t,c){
   const g = t.gender;
   const today = new Date();
-  const curYear = today.getFullYear();
-  const julyThisYear = new Date(curYear, 6, 1);
-  let lastJulyDate = today >= julyThisYear ? julyThisYear : new Date(curYear - 1, 6, 1);
-  const lastJulyStr = fmtD(lastJulyDate, "dd.mm.yyyy");
-  const wasIs = today >= lastJulyDate ? "was" : "is";
+
+  const existingIncDate = toDate(t.existingIncrementDate);
+  const lastJulyStr = existingIncDate ? fmtD(existingIncDate, "dd.mm.yyyy") : "____________";
+  const wasIs = "was";
+  const asOnAmount = (t.existingIncrementAmount!=="" && t.existingIncrementAmount!==null && t.existingIncrementAmount!==undefined)
+    ? t.existingIncrementAmount : t.lastButBasicPay;
 
   const incDate = toDate(t.lastIncrementDate);
   const hasIncrement = incDate && Number(t.lastBasicPay) !== Number(t.lastButBasicPay) && (!c.dor || incDate <= c.dor);
@@ -1085,7 +1168,7 @@ function docPAYC(t,c){
       
       <p><strong>PAY</strong></p>
       <div style="padding-left:10px; line-height:1.6;">
-        <div>1. (a) The Basic pay of ${MrMrs(g)} <strong>${upper(blank(t.staffName))}</strong> as on <strong>${lastJulyStr}</strong> ${wasIs} Rs. <strong>${inr(t.lastButBasicPay)}</strong> p.m. in the scale of pay of Rs. <strong>${blank(c.payLevel)}</strong></div>
+        <div>1. (a) The Basic pay of ${MrMrs(g)} <strong>${upper(blank(t.staffName))}</strong> as on <strong>${lastJulyStr}</strong> ${wasIs} Rs. <strong>${inr(asOnAmount)}</strong> p.m. in the scale of pay of Rs. <strong>${blank(c.payLevel)}</strong></div>
         <div>${clauseB}</div>
         <div>(c) ${heShe(g)} ${today >= (c.dor||new Date()) ? "drew" : "draws"} a Special Pay of Rs. <strong>NIL</strong> in addition to ${hisHer(g)} Basic Pay in the aforesaid scale,</div>
         <div>(d) ${heShe(g)} ${today >= (c.dor||new Date()) ? "drew" : "draws"} the following elements viz.</div>
@@ -1667,6 +1750,81 @@ $("#btnNew").addEventListener("click", async ()=>{
   dirty = false;
   activeTab = "form";
   render();
+});
+
+$("#btnLoadSample").addEventListener("click", ()=>{
+  if(dirty && !confirm("Discard unsaved changes and load the sample record?")) return;
+  current = sampleRecord();
+  current.id = null;
+  current.savedAt = null;
+  originalSnapshot = JSON.stringify(current);
+  dirty = true;
+  activeTab = "form";
+  render();
+  flashStatus("Loaded sample record. Click Save Record to keep it.", "ok");
+});
+
+/* =========================================================================
+   JSON EXPORT / IMPORT
+   ========================================================================= */
+function downloadJson(filename, dataObj){
+  const blob = new Blob([JSON.stringify(dataObj, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function slugify(s){ return String(s||"record").trim().replace(/[^a-z0-9]+/gi,"_").replace(/^_+|_+$/g,"") || "record"; }
+
+$("#btnExportJson").addEventListener("click", ()=>{
+  if(!current || !current.staffName){ alert("Nothing to export — enter or select a record first."); return; }
+  downloadJson(`pensioner_${slugify(current.staffName)}.json`, current);
+  flashStatus("Exported "+proper(current.staffName)+" as JSON.", "ok");
+});
+
+$("#btnExportAllJson").addEventListener("click", async ()=>{
+  const ids = await loadIndex();
+  const recs = [];
+  for(const id of ids){ const r = await loadRecord(id); if(r) recs.push(r); }
+  if(!recs.length){ alert("No saved records to export yet."); return; }
+  downloadJson(`pensioner_records_all_${new Date().toISOString().slice(0,10)}.json`, recs);
+  flashStatus(`Exported ${recs.length} record(s) as JSON.`, "ok");
+});
+
+$("#btnImportJson").addEventListener("click", ()=> $("#fileImportJson").click());
+
+$("#fileImportJson").addEventListener("change", async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const incoming = Array.isArray(data) ? data : [data];
+    let count = 0;
+    for(const rec of incoming){
+      if(!rec || typeof rec !== "object") continue;
+      const newRec = Object.assign(defaultRecord(), rec);
+      newRec.id = (rec.id && typeof rec.id === "string") ? rec.id : newId();
+      newRec.savedAt = new Date().toISOString();
+      await saveRecord(newRec);
+      const ids = await loadIndex();
+      if(!ids.includes(newRec.id)){ ids.push(newRec.id); await saveIndex(ids); }
+      count++;
+    }
+    if(count){
+      await refreshRecordList();
+      flashStatus(`Imported ${count} record(s) from JSON.`, "ok");
+    } else {
+      flashStatus("No valid records found in that file.", "err");
+    }
+  }catch(err){
+    flashStatus("Import failed: file is not valid JSON.", "err");
+  } finally {
+    e.target.value = "";
+  }
 });
 
 $("#btnSave").addEventListener("click", async ()=>{
