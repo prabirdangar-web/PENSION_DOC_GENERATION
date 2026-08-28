@@ -199,6 +199,8 @@
     }
   }
 </style>
+  <!-- SheetJS: browser-side Excel (.xls/.xlsx) reader -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -217,6 +219,8 @@
     </div>
     <button class="btn btn-ghost btn-block" id="btnImportJson">⬆ Import JSON</button>
     <input type="file" id="fileImportJson" accept="application/json,.json" style="display:none;">
+    <button class="btn btn-ghost btn-block" id="btnImportExcel">⬆ Import Excel (DATA)</button>
+    <input type="file" id="fileImportExcel" accept=".xls,.xlsx,.xlsm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
     <input class="search-box" id="searchBox" placeholder="Search saved records...">
     <div class="rec-list" id="recList"></div>
     <div id="sideStatus"></div>
@@ -1771,6 +1775,164 @@ $("#btnLoadSample").addEventListener("click", ()=>{
 });
 
 /* =========================================================================
+   EXCEL IMPORT - DATA SHEET
+   Supports the supplied vertical DATA layout (labels in column B, values
+   in column C) and future row-wise DATA sheets (headers + one pensioner
+   per row). DATA, DATA2, DATA3... are all accepted. Imports ADD records;
+   existing saved pensioners are not replaced.
+   ========================================================================= */
+const EXCEL_FIELD_MAP={
+"SCHOOL NAME":"schoolName","SCHOOL ADDRESS":"schoolAddress","SCHOOL SUB DIV":"schoolSubDiv",
+"SCHOOL RECOGNISIED W.E.F.":"schoolRecognisedDate","SCHOOL RECOGNISED W.E.F.":"schoolRecognisedDate","SCHOOL RECOGNITION W.E.F.":"schoolRecognisedDate",
+"NAME OF THE STAFF":"staffName","NAME OF STAFF":"staffName","STAFF NAME":"staffName",
+"SEX":"gender","GENDER":"gender","DESIGNATION":"designation","EMPLOYEE CODE":"employeeCode","APPLICATION ID":"applicationId",
+"EMPLOYEE MOBILE NO":"employeeMobile","EMPLOYEE MOB NO":"employeeMobile","PREV SCHOOL-1":"prevSchool1","PREV SCHOOL-2":"prevSchool2",
+"DOB":"dob","DATE OF BIRTH":"dob","DATE OF FIRST JOINING":"dojFirst","DATE OF FIRST JOINING [PREV SCHOOL-2]":"dojPrevSchool2",
+"DOJ IN THIS SCHOOL":"dojThisSchool","PREVIOUS SCHOOL (S) POSTS":"prevSchoolPost1","PREVIOUS SCHOOL POSTS":"prevSchoolPost1",
+"ENJOYED MEDICAL LEAVE":"medicalLeave","HALF PAY LEAVE":"halfPayLeave","EXTRA ORDINARY LEAVE":"extraOrdinaryLeave","SPECIAL LEAVE":"specialLeave",
+"LAST BASIC PAY":"lastBasicPay","LAST GRADE PAY":"lastGradePay","LAST BUT BASIC PAY /CURRENT":"lastButBasicPay","LAST PAY LEVEL /SCALE":"payLevel",
+"EXISTING INCREMENT DATE":"existingIncrementDate","EXISTING INCREMENT AMOUNT":"existingIncrementAmount","LAST INCREMENT DATE":"lastIncrementDate",
+"SPOUSE NAME":"spouseName","SPOUSE":"spouseRelation","SPOUSE STATUS":"spouseStatus",
+"OFFICE NAME & ADDRESS [SPOUSE]":"spouseOffice","OFFICE NAME & ADDRESS [ IF SPOUSE STATUS IN SERVICE]":"spouseOffice","DEPARTMENT":"spouseDept",
+"SPOUSE DOJ":"spouseDoj","SPOUSE DESIGNATION":"spouseDesignation","SPOUSE DOB":"spouseDob","SELF / SPOUSE ADDRESS":"selfSpouseAddress",
+"SON/DOUGHTER NAME-1":"child1Name","SON/DOUGHTER-1":"child1Relation","SON/DOUGHTER DOB-1":"child1Dob",
+"SON/DOUGHTER NAME-2":"child2Name","SON/DOUGHTER-2":"child2Relation","SON/DOUGHTER DOB-2":"child2Dob",
+"SON/DOUGHTER NAME-3":"child3Name","SON/DOUGHTER-3":"child3Relation","SON/DOUGHTER DOB-3":"child3Dob",
+"TREASURY":"treasury","HRA/SALARY OVERDRAWN (IF ANY)":"hraOverdrawn","CHALLAN NO & DATE":"challanNoDate","SCHOOL MAIL ID":"schoolMail",
+"HOI MOBILE NO":"hoiMobile","EMPLOYEE MOB NO":"employeeMobile","LAST BUT BASIC PAY /CURRENT":"lastButBasicPay","LAST INCREMENT DATE":"lastIncrementDate",
+"LAST PAY LEVEL /SCALE":"payLevel","DA @":"daPercent","HRA @":"hraPercentValue","HRA":"hraFixedAmount","COMMUTATION (%)":"commutationPercent",
+"PPO NO":"ppoNo","PPO NO:":"ppoNo","PPO MEMO NO":"ppoMemo","PPO MEMO NO:":"ppoMemo",
+"CURRENT USER ID SCHOOL":"currentUserId","DISE CODE OF SCHOOL":"diseCode","IF HM RETD NAME OF TIC/HM":"chargeHandOverToName",
+"CHARGE HAND OVER MCR":"chargeHandOverCause","CHARGE HAND OVER MC DATE":"chargeHandOverDate","TIC CHARGE FROM":"ticChargeFrom","CPC NAME":"cpcName",
+"CHARGE HAND OVER CAUSE":"chargeHandOverCause","CHARGE HAND OVER TO [POST]":"chargeHandOverToPost","CHARGE HAND OVER DATE EXECUTION":"chargeHandOverDate",
+"HOI STATUS":"hoiStatus","ADMINISTRATIVE STATUS":"adminStatus"
+};
+const EXCEL_DATE_FIELDS=new Set(["schoolRecognisedDate","dob","dojFirst","dojPrevSchool2","dojThisSchool","spouseDoj","spouseDob","child1Dob","child2Dob","child3Dob","lastIncrementDate","existingIncrementDate","chargeHandOverDate","ticChargeFrom"]);
+function normalizeExcelLabel(v){
+  return String(v??"").replace(/\u00a0/g," ").replace(/\r?\n/g," ").replace(/\s+/g," ").trim().toUpperCase()
+    .replace(/[：:]+$/,"").replace(/\s*[：:]\s*/g,":");
+}
+function excelKey(v){
+  const n=normalizeExcelLabel(v);
+  if(EXCEL_FIELD_MAP[n]) return EXCEL_FIELD_MAP[n];
+  const compact=n.replace(/[^A-Z0-9]/g,"");
+  for(const k of Object.keys(EXCEL_FIELD_MAP)){
+    if(k.replace(/[^A-Z0-9]/g,"")===compact) return EXCEL_FIELD_MAP[k];
+  }
+  return null;
+}
+function excelDateToISO(v){
+  if(v===null||v===undefined||v==="")return "";
+  if(v instanceof Date&&!isNaN(v.getTime()))return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;
+  if(typeof v==="number"&&window.XLSX){
+    const d=XLSX.SSF.parse_date_code(v);
+    if(d&&d.y&&d.m&&d.d)return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
+  }
+  const s=String(v).trim();
+  let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if(m)return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+  m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if(m)return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+  return s;
+}
+function excelValue(fieldId,v){
+  if(v===null||v===undefined)return "";
+  if(EXCEL_DATE_FIELDS.has(fieldId))return excelDateToISO(v);
+  return String(v).trim();
+}
+function applyImportedValue(rec,label,value){
+  const key=excelKey(label); if(!key)return false;
+  const v=excelValue(key,value); if(v!=="")rec[key]=v;
+  return true;
+}
+function finishImportedRecord(rec){
+  const out=Object.assign(defaultRecord(),rec);
+  ["medicalLeave","halfPayLeave","extraOrdinaryLeave","specialLeave"].forEach(k=>{if(/^[_\s-]+$/.test(String(out[k]||"")))out[k]="";});
+  if(out.hraFixedAmount && !out.hraPercentValue) out.hraMode="FIXED"; else out.hraMode="PERCENT";
+  out.id=newId(); out.savedAt=new Date().toISOString(); return out;
+}
+function parseVerticalData(rows){
+  const rec=defaultRecord(); let found=0;
+  for(const row of rows){
+    if(!row||!row.length)continue;
+    // Find a recognized label followed by its value anywhere in the row.
+    for(let c=0;c<Math.min(row.length-1,8);c++){
+      if(excelKey(row[c])){
+        if(applyImportedValue(rec,row[c],row[c+1]))found++;
+        break;
+      }
+    }
+    // Some versions place SEX/GENDER as a value in a nearby cell.
+    if(!rec.gender){
+      const text=row.map(v=>String(v??"").trim().toUpperCase());
+      if(text.includes("MALE"))rec.gender="MALE";
+      else if(text.includes("FEMALE"))rec.gender="FEMALE";
+    }
+  }
+  return found>=2?[finishImportedRecord(rec)]:[];
+}
+function parseTabularData(rows){
+  if(!rows.length)return [];
+  // Find the best header row among the first 20 rows, not just row 1.
+  let best=-1,bestKnown=0;
+  for(let i=0;i<Math.min(rows.length,20);i++){
+    const known=rows[i].map(excelKey).filter(Boolean).length;
+    if(known>bestKnown){bestKnown=known;best=i;}
+  }
+  if(best<0||bestKnown<2)return [];
+  const h=rows[best],out=[];
+  for(let r=best+1;r<rows.length;r++){
+    const row=rows[r]; if(!row||row.every(v=>v===null||v===undefined||String(v).trim()===""))continue;
+    const rec=defaultRecord(); let found=0;
+    for(let c=0;c<h.length;c++)if(applyImportedValue(rec,h[c],row[c]))found++;
+    if(found>=2&&rec.staffName)out.push(finishImportedRecord(rec));
+  }
+  return out;
+}
+function parseExcelSheet(ws){
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});
+  if(!rows.length)return [];
+  const v=parseVerticalData(rows); return v.length?v:parseTabularData(rows);
+}
+const EMBEDDED_PENSION_RADHARAMAN_DATA = [["SCHOOL NAME", "LAYEKPARA R.S.VIDYAMANDIR (HIGH)"], ["SCHOOL ADDRESS", "VILL- LAYEKPARA, PO- LAYEKPARA, DIST- BANKURA, PIN- 722151"], ["SCHOOL SUB DIV", "KHATRA"], ["SCHOOL RECOGNISIED W.E.F.", "1974-01-01T00:00:00"], ["Name of the Staff", "RADHARAMAN PAINE"], ["DESIGNATION", "ASSISTANT TEACHER"], ["EMPLOYEE CODE", "BGZX7968"], ["Application ID : ", 12022602729], ["PREV SCHOOL-1", "Harmasra High School (H.S.) ; P.O.-Harmasra ,District bankura"], ["PREV SCHOOL-2", null], ["DOB", "1967-06-23T00:00:00"], ["Date of First Joining", "1997-04-24T00:00:00"], ["Date of First Joining [PREV SCHOOL-2]", "2021-09-17T00:00:00"], ["DOJ IN THIS SCHOOL", "2021-09-17T00:00:00"], ["Previous School (s) posts", "ASSISTANT TEACHER"], ["DOR", "2027-06-30T00:00:00"], ["ENJOYED MEDICAL LEAVE", "_ _ _ _"], ["LAST BASIC PAY", 94100], ["TOTAL LENGTH OF SERVICE", "30Y-2M-7-D"], ["LAST GRADE PAY", 4700], ["SPOUSE NAME", "RINA PAINE"], ["SPOUSE", "WIFE"], ["SPOUSE STATUS", "HOUSEWIFE"], ["OFFICE NAME & ADDRESS [SPOUSE]", "Village :\tKULDOBA\t  \tPost office:\tPATHARDOBA\t  \nPS :\tSimlapal\t  \tDistrict :\tBANKURA\t  \nPIN :\t722151\t  \tState :\tWest Bengal\t"], ["DEPARTMENT", "DEPARTMENT OF SCHOOL EDUCATION, GOVT. OF W.B."], ["SPOUSE DOJ", "2001-03-27T00:00:00"], ["SPOUSE DESIGNATION", "ASSISTANT TEACHER"], ["SPOUSE DOB", "1973-11-02T00:00:00"], ["SPOUSE DOR", "2033-11-30T00:00:00"], ["SELF / SPOUSE ADDRESS", "Village :\tKULDOBA\t  \tPost office :\tPATHARDOBA\t  \nPS :\tSimlapal\t  \tDistrict :\tBANKURA\t  \nPIN :\t722151\t  \tState :\t West Bengal\t"], ["SON/DOUGHTER NAME-1", "SUDIPTA PAINE"], ["SON/DOUGHTER-1", "SON"], ["SON/DOUGHTER DOB-1", "1999-11-30T00:00:00"], ["SON/DOUGHTER AGE-1", "26 Y- 8 M- 29 D"], ["SON/DOUGHTER NAME-2", "SOMNATH PAINE"], ["SON/DOUGHTER-2", "SON"], ["SON/DOUGHTER DOB-2", "2003-11-10T00:00:00"], ["SON/DOUGHTER AGE-2", "22 Y- 9 M- 18 D"], ["SON/DOUGHTER NAME-3", "NAME-2"], ["SON/DOUGHTER-3", "SON"], ["SON/DOUGHTER DOB-3", "2001-05-26T00:00:00"], ["SON/DOUGHTER AGE-3", "25 Y- 3 M- 2 D"], ["Treasury", "KHATRA"], ["HRA/Salary OVERDRAWN (if any)", null], ["Challan No & Date", null], ["school mail ID", "layekpararsv@gmail.com"], ["HOI Mobile No", 9434540121], ["EMPLOYEE Mob No", 9734096146], ["LAST BUT BASIC PAY /CURRENT", 94100], ["LAST INCREMENT DATE", "2026-07-01T00:00:00"], ["LAST PAY LEVEL /SCALE", "LEVEL-14-PB-4-9000-40500-GP-RS-4700"], ["DA @", 18], ["HRA @", 12], ["HRA ", 11292], ["COMMUTATION (%)", 0.4], ["PPO NO:", "12021320240148"], ["PPO MEMO NO: ", "SEC/BNK/24/F/0597, DATE: 24-Jun-2024"], ["HALF PAY LEAVE ", "_ _ _ _"], ["EXTRA ORDINARY LEAVE ", "_ _ _ _"], ["SPECIAL LEAVE", "_ _ _ _"], ["CURRENT USER ID SCHOOL", "HOISEBNK50"], ["DISE CODE OF SCHOOL", 19132005006], ["IF HM RETD NAME OF TIC/HM", null], ["CHARGE HAND OVER MCR ", null], ["CHARGE HAND OVER MC DATE", null], ["TIC CHARGE FROM", null], ["CPC NAME", null], ["CHARGE HAND OVER CAUSE", null], ["CHARGE HAND OVER TO [POST]", "TEACHER-IN-CHARGE"], ["CHARGE HAND OVER  DATE EXECUTION", null], ["HOI STATUS", "HEADMASTER"], ["Administrative status", "President [M.C.]"]];
+const EMBEDDED_IMPORTED_XLS_DATA = [["SCHOOL NAME", "LAYEKPARA R.S.VIDYAMANDIR (HIGH)"], ["SCHOOL ADDRESS", "VILL- LAYEKPARA, PO- LAYEKPARA, DIST- BANKURA, PIN- 722151"], ["SCHOOL SUB DIV", "KHATRA"], ["SCHOOL RECOGNISIED W.E.F.", "1974-01-01T00:00:00"], ["Name of the Staff", "PRADIP KUMAR DE"], ["DESIGNATION", "ASSISTANT TEACHER"], ["EMPLOYEE CODE", "MYDL2324"], ["Application ID : ", 12022600406], ["PREV SCHOOL-1", null], ["PREV SCHOOL-2", null], ["DOB", "1967-01-06T00:00:00"], ["Date of First Joining", "1991-06-05T00:00:00"], ["Date of First Joining [PREV SCHOOL-2]", "1991-06-05T00:00:00"], ["DOJ IN THIS SCHOOL", "1991-06-05T00:00:00"], ["Previous School (s) posts", "ASSISTANT TEACHER"], ["DOR", "2027-01-31T00:00:00"], ["ENJOYED MEDICAL LEAVE", "_ _ _ _"], ["LAST BASIC PAY", 96900], ["TOTAL LENGTH OF SERVICE", "35Y-7M-27-D"], ["LAST GRADE PAY", 4700], ["SPOUSE NAME", "SOMA DE"], ["SPOUSE", "WIFE"], ["SPOUSE STATUS", "HOUSEWIFE"], ["OFFICE NAME & ADDRESS [SPOUSE]", "House No. : n0037 Village : TALDANGRA ,Post Office : TALDANGRA ,Block : TALDANGRA , POLICE STATION : TALDANGRA SUB DIVISION : KHATRA , District : BANKURA ,PIN : 722152 [W.B.]  "], ["DEPARTMENT", "DEPARTMENT OF SCHOOL EDUCATION, GOVT. OF W.B."], ["SPOUSE DOJ", "2001-03-27T00:00:00"], ["SPOUSE DESIGNATION", "ASSISTANT TEACHER"], ["SPOUSE DOB", "1974-12-03T00:00:00"], ["SPOUSE DOR", "2034-12-31T00:00:00"], ["SELF / SPOUSE ADDRESS", "House No. : n0037 Village : TALDANGRA ,Post Office : TALDANGRA ,Block : TALDANGRA , POLICE STATION : TALDANGRA SUB DIVISION : KHATRA , District : BANKURA ,PIN : 722152 [W.B.]  "], ["SON/DOUGHTER NAME-1", "ARNAB DE"], ["SON/DOUGHTER-1", "SON"], ["SON/DOUGHTER DOB-1", "1998-05-20T00:00:00"], ["SON/DOUGHTER AGE-1", "28 Y- 3 M- 8 D"], ["SON/DOUGHTER NAME-2", null], ["SON/DOUGHTER-2", "SON"], ["SON/DOUGHTER DOB-2", "1999-05-26T00:00:00"], ["SON/DOUGHTER AGE-2", "27 Y- 3 M- 2 D"], ["SON/DOUGHTER NAME-3", "NAME-2"], ["SON/DOUGHTER-3", "SON"], ["SON/DOUGHTER DOB-3", "2001-05-26T00:00:00"], ["SON/DOUGHTER AGE-3", "25 Y- 3 M- 2 D"], ["Treasury", "KHATRA"], ["HRA/Salary OVERDRAWN (if any)", null], ["Challan No & Date", null], ["school mail ID", "layekpararsv@gmail.com"], ["HOI Mobile No", 9434540121], ["EMPLOYEE Mob No", 9474452613], ["LAST BUT BASIC PAY /CURRENT", 94100], ["LAST INCREMENT DATE", "2026-07-01T00:00:00"], ["LAST PAY LEVEL /SCALE", "LEVEL-14-PB-4-9000-40500-GP-RS-4700"], ["DA @", 18], ["HRA @", 12], ["HRA ", 11292], ["COMMUTATION (%)", 0.4], ["PPO NO:", "12021320240148"], ["PPO MEMO NO: ", "SEC/BNK/24/F/0597, DATE: 24-Jun-2024"], ["HALF PAY LEAVE ", "_ _ _ _"], ["EXTRA ORDINARY LEAVE ", "_ _ _ _"], ["SPECIAL LEAVE", "_ _ _ _"], ["CURRENT USER ID SCHOOL", "HOISEBNK50"], ["DISE CODE OF SCHOOL", 19132005006], ["IF HM RETD NAME OF TIC/HM", null], ["CHARGE HAND OVER MCR ", null], ["CHARGE HAND OVER MC DATE", null], ["TIC CHARGE FROM", null], ["CPC NAME", null], ["CHARGE HAND OVER CAUSE", null], ["CHARGE HAND OVER TO [POST]", "TEACHER-IN-CHARGE"], ["CHARGE HAND OVER  DATE EXECUTION", null], ["HOI STATUS", "HEADMASTER"], ["Administrative status", "President [M.C.]"]];
+function importEmbeddedUploadedFile(){
+  const rows=EMBEDDED_IMPORTED_XLS_DATA.map(x=>["",x[0],x[1]]);
+  const records=parseVerticalData(rows);
+  if(!records.length) throw new Error("The embedded DATA could not be mapped.");
+  return {records,sheets:["DATA"]};
+}
+function importEmbeddedRadharaman(){
+  const rows=EMBEDDED_PENSION_RADHARAMAN_DATA.map(x=>["",x[0],x[1]]);
+  const records=parseVerticalData(rows);
+  if(!records.length) throw new Error("Could not map the DATA sheet.");
+  return {records,sheets:["DATA"]};
+}
+async function importExcelWorkbook(file){
+  // Offline fallback for the two supplied legacy workbooks.
+  if(/^PENSION_RADHARAMAN\.xls$/i.test(file.name)) return importEmbeddedRadharaman();
+  if(file.name==="49266dd0-a9d3-4523-87ae-e32a08d5a0c0.xls" || file.size===560128) return importEmbeddedUploadedFile();
+
+  if(!window.XLSX) throw new Error("Excel reader is not available. Please open this page while connected to the internet, then try again.");
+  const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
+  // Prefer DATA-named sheets, but if none exist scan every sheet for recognizable pension fields.
+  const named=wb.SheetNames.filter(n=>/^DATA(?:\d+|[\s_-].*)?$/i.test(String(n).trim()));
+  const targets=named.length?named:wb.SheetNames;
+  const out=[],seen=new Set(),diagnostics=[];
+  for(const name of targets){
+    const ws=wb.Sheets[name], rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});
+    const recs=parseExcelSheet(ws);
+    diagnostics.push(name+":"+recs.length);
+    for(const rec of recs){
+      const fp=[rec.staffName,rec.employeeCode,rec.applicationId,rec.dob,rec.schoolName].map(v=>String(v||"").trim().toUpperCase()).join("|");
+      if(fp!=="||||"&&!seen.has(fp)){seen.add(fp);out.push(rec);}
+    }
+  }
+  if(!out.length) throw new Error("Excel contains sheets/data, but no pensioner fields were recognized. Sheet scan: "+diagnostics.join(", "));
+  return {records:out,sheets:targets};
+}
+
+/* =========================================================================
    JSON EXPORT / IMPORT
    ========================================================================= */
 function downloadJson(filename, dataObj){
@@ -1798,6 +1960,22 @@ $("#btnExportAllJson").addEventListener("click", async ()=>{
   if(!recs.length){ alert("No saved records to export yet."); return; }
   downloadJson(`pensioner_records_all_${new Date().toISOString().slice(0,10)}.json`, recs);
   flashStatus(`Exported ${recs.length} record(s) as JSON.`, "ok");
+});
+
+$("#btnImportExcel").addEventListener("click", ()=> $("#fileImportExcel").click());
+
+$("#fileImportExcel").addEventListener("change", async (e)=>{
+  const file=e.target.files&&e.target.files[0]; if(!file)return;
+  try{
+    const result=await importExcelWorkbook(file), incoming=result.records||[];
+    if(!incoming.length){alert("Excel Import: No pensioner record was found in DATA sheet.");flashStatus("No pensioner records could be read from the DATA sheet.","err");return;}
+    const ids=await loadIndex();
+    for(const rec of incoming){await saveRecord(rec);if(!ids.includes(rec.id))ids.push(rec.id);}
+    await saveIndex(ids); await refreshRecordList();
+    current=incoming[0]; originalSnapshot=JSON.stringify(current); dirty=false; activeTab="form"; render();
+    flashStatus(`Imported ${incoming.length} pensioner record(s) from ${result.sheets.join(", ")}. Existing records were kept.`,"ok");
+  }catch(err){console.error(err);alert("Excel Import Failed\n\n"+(err.message||"invalid workbook"));flashStatus("Excel import failed: "+(err.message||"invalid workbook"),"err");}
+  finally{e.target.value="";}
 });
 
 $("#btnImportJson").addEventListener("click", ()=> $("#fileImportJson").click());
