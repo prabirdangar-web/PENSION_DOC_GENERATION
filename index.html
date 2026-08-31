@@ -201,6 +201,9 @@
 </style>
   <!-- SheetJS: browser-side Excel (.xls/.xlsx) reader -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- Firebase (compat build — works with plain <script> tags, no bundler needed) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 </head>
 <body>
 <div class="app">
@@ -224,7 +227,7 @@
     <input class="search-box" id="searchBox" placeholder="Search saved records...">
     <div class="rec-list" id="recList"></div>
     <div id="sideStatus"></div>
-    <div class="side-foot">Data is stored privately for your account and stays available across sessions. Nothing is shared with other users. Use Export/Import to back up records as JSON files.</div>
+    <div class="side-foot">Data is synced live to Firebase and stays available across sessions and devices. Use Export/Import to back up records as JSON files.</div>
   </div>
 
   <!-- MAIN -->
@@ -1520,35 +1523,59 @@ const DOC_LIST = [
 ];
 
 /* =========================================================================
-   STORAGE ADAPTER
+   STORAGE ADAPTER — Firebase Realtime Database
+   (falls back to localStorage only if Firebase is unreachable, e.g. offline)
    ========================================================================= */
 const INDEX_KEY = "pensioners:index";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCiqQFsnbSi6eCgUI_W3NTybzIkRmCI_54",
+  authDomain: "tfhs-portal.firebaseapp.com",
+  databaseURL: "https://tfhs-portal-default-rtdb.firebaseio.com",
+  projectId: "tfhs-portal",
+  storageBucket: "tfhs-portal.firebasestorage.app",
+  messagingSenderId: "316041012204",
+  appId: "1:316041012204:web:c0b52bc796c5ac173716c9",
+  measurementId: "G-47TRCVQCC7"
+};
+
+const fbApp = firebase.initializeApp(firebaseConfig);
+const fbdb = firebase.database();
+// All app data lives under this root node in the Realtime Database.
+const ROOT = "pension_portal";
+
+// Realtime Database keys may not contain '.', '#', '$', '[' or ']'.
+// Our app keys (e.g. "pensioner:p_123_abc") only ever use letters, digits,
+// underscores and colons, so they are safe to use as-is.
+function dbRef(k){ return fbdb.ref(ROOT + "/" + k); }
 
 const store = {
   async get(k) {
     try {
-      if (window.storage && typeof window.storage.get === 'function') {
-        return await window.storage.get(k);
-      }
-    } catch(e) {}
-    const v = localStorage.getItem(k);
-    return v ? { value: v } : null;
+      const snap = await dbRef(k).get();
+      if (snap.exists()) return { value: snap.val() };
+      return null;
+    } catch(e) {
+      console.warn("Firebase get failed, falling back to localStorage:", e);
+      const v = localStorage.getItem(k);
+      return v ? { value: v } : null;
+    }
   },
   async set(k, v) {
     try {
-      if (window.storage && typeof window.storage.set === 'function') {
-        return await window.storage.set(k, v);
-      }
-    } catch(e) {}
-    localStorage.setItem(k, v);
+      await dbRef(k).set(v);
+    } catch(e) {
+      console.warn("Firebase set failed, falling back to localStorage:", e);
+      localStorage.setItem(k, v);
+    }
   },
   async delete(k) {
     try {
-      if (window.storage && typeof window.storage.delete === 'function') {
-        return await window.storage.delete(k);
-      }
-    } catch(e) {}
-    localStorage.removeItem(k);
+      await dbRef(k).remove();
+    } catch(e) {
+      console.warn("Firebase delete failed, falling back to localStorage:", e);
+      localStorage.removeItem(k);
+    }
   }
 };
 
