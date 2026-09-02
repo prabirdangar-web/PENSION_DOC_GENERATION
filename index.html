@@ -160,6 +160,34 @@
     .page.landscape-layout { width:100% !important; min-height:auto !important; }
   }
 
+  /* ---------- Auth / Login ---------- */
+  .auth-box{border-top:1px solid #2c4a68;padding-top:10px;}
+  .auth-user{font-size:11.5px;color:#dce6ef;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .auth-user .dot{width:7px;height:7px;border-radius:50%;background:#3fbf6f;flex:0 0 auto;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(15,20,28,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .modal-overlay[hidden]{display:none;}
+  .modal-box{background:#fff;border-radius:10px;padding:20px 22px 22px;width:100%;max-width:320px;box-shadow:0 10px 30px rgba(0,0,0,.3);}
+  .modal-box h3{margin:0 0 4px;color:var(--navy);font-size:16px;}
+  .modal-box p.sub{margin:0 0 14px;font-size:12px;color:var(--muted);}
+  .modal-box label{margin-top:8px;}
+  .modal-box .modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+  .modal-box .modal-err{font-size:11.5px;color:var(--danger);margin-top:8px;min-height:14px;}
+  .modal-close{position:absolute;top:10px;right:14px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);}
+  .modal-box{position:relative;}
+  .lock-banner{display:flex;align-items:center;gap:8px;background:#fff7ec;border:1px solid var(--gold);color:#7a541f;font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:14px;}
+  .lock-banner button{margin-left:auto;flex:0 0 auto;}
+  body.locked .form-grid input,
+  body.locked .form-grid select,
+  body.locked .form-grid textarea{background:#f3f4f6;pointer-events:none;color:#8a93a0;}
+  body.locked #btnSave,
+  body.locked #btnResetForm,
+  body.locked #btnNew,
+  body.locked #btnLoadSample,
+  body.locked #btnDuplicate,
+  body.locked #btnDelete,
+  body.locked #btnImportJson,
+  body.locked #btnImportExcel{opacity:.55;}
+
   /* ---------- Standardized Print Engine ---------- */
   @media print{
     html, body {
@@ -202,8 +230,9 @@
   <!-- SheetJS: browser-side Excel (.xls/.xlsx) reader -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <!-- Firebase (compat build — works with plain <script> tags, no bundler needed) -->
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 <div class="app">
@@ -227,7 +256,18 @@
     <input class="search-box" id="searchBox" placeholder="Search saved records...">
     <div class="rec-list" id="recList"></div>
     <div id="sideStatus"></div>
-    <div class="side-foot">Data is synced live to Firebase and stays available across sessions and devices. Use Export/Import to back up records as JSON files.</div>
+
+    <div class="auth-box" id="authBox">
+      <div id="authLoggedOut">
+        <button class="btn btn-ghost btn-block" id="btnLoginOpen">🔒 Login to Edit</button>
+      </div>
+      <div id="authLoggedIn" style="display:none;">
+        <div class="auth-user"><span class="dot"></span><span id="authUserLabel"></span></div>
+        <button class="btn btn-ghost btn-block" id="btnLogout">Logout</button>
+      </div>
+    </div>
+
+    <div class="side-foot">Data is synced live to Firebase and stays available across sessions and devices. Records are <strong>view-only until you log in</strong>; use Export/Import to back up records as JSON files.</div>
   </div>
 
   <!-- MAIN -->
@@ -251,6 +291,28 @@
     </div>
   </div>
 
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal" hidden>
+  <div class="modal-box">
+    <button class="modal-close" id="btnLoginClose" aria-label="Close">✕</button>
+    <h3>Login to Edit</h3>
+    <p class="sub">Sign in to add, edit, save, delete, or import pensioner records. Anyone can still view and print without logging in.</p>
+    <div class="field">
+      <label for="loginEmail">Email</label>
+      <input type="text" id="loginEmail" autocomplete="username" placeholder="you@example.com">
+    </div>
+    <div class="field">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <div class="modal-err" id="loginError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnLoginCancel">Cancel</button>
+      <button class="btn btn-primary" id="btnLoginSubmit">Login</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1541,6 +1603,7 @@ const firebaseConfig = {
 
 const fbApp = firebase.initializeApp(firebaseConfig);
 const fbdb = firebase.database();
+const fbAuth = firebase.auth();
 // All app data lives under this root node in the Realtime Database.
 const ROOT = "pension_portal";
 
@@ -1603,6 +1666,66 @@ async function deleteRecordStorage(id){
   await saveIndex(ids);
 }
 
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+/* =========================================================================
+   AUTH — Login required to edit; anyone can still view/print/export.
+   ========================================================================= */
+let loggedIn = false;
+
+function updateAuthUI(user){
+  loggedIn = !!user;
+  document.body.classList.toggle("locked", !loggedIn);
+  $("#authLoggedOut").style.display = loggedIn ? "none" : "block";
+  $("#authLoggedIn").style.display = loggedIn ? "block" : "none";
+  if(loggedIn) $("#authUserLabel").textContent = user.email || "Signed in";
+}
+
+function guardEdit(){
+  if(!loggedIn){ openLoginModal(); return false; }
+  return true;
+}
+
+function openLoginModal(){
+  $("#loginError").textContent = "";
+  $("#loginPassword").value = "";
+  $("#loginModal").hidden = false;
+  $("#loginEmail").focus();
+}
+function closeLoginModal(){ $("#loginModal").hidden = true; }
+
+fbAuth.onAuthStateChanged(user=>{ updateAuthUI(user); });
+
+$("#btnLoginOpen").addEventListener("click", openLoginModal);
+$("#btnLoginClose").addEventListener("click", closeLoginModal);
+$("#btnLoginCancel").addEventListener("click", closeLoginModal);
+$("#loginModal").addEventListener("click", (e)=>{ if(e.target.id==="loginModal") closeLoginModal(); });
+
+async function doLogin(){
+  const email = $("#loginEmail").value.trim();
+  const pass = $("#loginPassword").value;
+  const errEl = $("#loginError");
+  errEl.textContent = "";
+  if(!email || !pass){ errEl.textContent = "Enter both email and password."; return; }
+  try{
+    await fbAuth.signInWithEmailAndPassword(email, pass);
+    closeLoginModal();
+    flashStatus("Logged in. You can now edit records.", "ok");
+  }catch(e){
+    console.warn("Login failed:", e);
+    errEl.textContent = "Login failed: " + (e.message || "check your email/password.");
+  }
+}
+$("#btnLoginSubmit").addEventListener("click", doLogin);
+$("#loginPassword").addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
+$("#loginEmail").addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
+
+$("#btnLogout").addEventListener("click", async ()=>{
+  await fbAuth.signOut();
+  flashStatus("Logged out. Records are now view-only.", "ok");
+});
+
 /* =========================================================================
    APP STATE & RENDER LOGIC
    ========================================================================= */
@@ -1612,9 +1735,6 @@ let originalSnapshot = JSON.stringify(current);
 let activeTab = "form";
 let activeDoc = "COVER";
 let dirty = false;
-
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
 
 function newId(){ return "p_"+Date.now()+"_"+Math.random().toString(36).slice(2,8); }
 
@@ -1781,6 +1901,7 @@ $$(".tab").forEach(t=>t.addEventListener("click", async ()=>{
 }));
 
 $("#btnNew").addEventListener("click", async ()=>{
+  if(!guardEdit()) return;
   if(dirty && !confirm("Discard unsaved changes and start a new record?")) return;
   current = defaultRecord();
   originalSnapshot = JSON.stringify(current);
@@ -1790,6 +1911,7 @@ $("#btnNew").addEventListener("click", async ()=>{
 });
 
 $("#btnLoadSample").addEventListener("click", ()=>{
+  if(!guardEdit()) return;
   if(dirty && !confirm("Discard unsaved changes and load the sample record?")) return;
   current = sampleRecord();
   current.id = null;
@@ -1989,7 +2111,7 @@ $("#btnExportAllJson").addEventListener("click", async ()=>{
   flashStatus(`Exported ${recs.length} record(s) as JSON.`, "ok");
 });
 
-$("#btnImportExcel").addEventListener("click", ()=> $("#fileImportExcel").click());
+$("#btnImportExcel").addEventListener("click", ()=> { if(guardEdit()) $("#fileImportExcel").click(); });
 
 $("#fileImportExcel").addEventListener("change", async (e)=>{
   const file=e.target.files&&e.target.files[0]; if(!file)return;
@@ -2005,7 +2127,7 @@ $("#fileImportExcel").addEventListener("change", async (e)=>{
   finally{e.target.value="";}
 });
 
-$("#btnImportJson").addEventListener("click", ()=> $("#fileImportJson").click());
+$("#btnImportJson").addEventListener("click", ()=> { if(guardEdit()) $("#fileImportJson").click(); });
 
 $("#fileImportJson").addEventListener("change", async (e)=>{
   const file = e.target.files && e.target.files[0];
@@ -2039,6 +2161,7 @@ $("#fileImportJson").addEventListener("change", async (e)=>{
 });
 
 $("#btnSave").addEventListener("click", async ()=>{
+  if(!guardEdit()) return;
   if(!current.staffName){ alert("Please enter the employee's Name of the Staff before saving."); return; }
   if(!current.id) current.id = newId();
   current.savedAt = new Date().toISOString();
@@ -2053,6 +2176,7 @@ $("#btnSave").addEventListener("click", async ()=>{
 });
 
 $("#btnResetForm").addEventListener("click", ()=>{
+  if(!guardEdit()) return;
   if(!confirm("Undo all unsaved changes on this record?")) return;
   current = JSON.parse(originalSnapshot);
   dirty = false;
@@ -2060,6 +2184,7 @@ $("#btnResetForm").addEventListener("click", ()=>{
 });
 
 $("#btnDuplicate").addEventListener("click", ()=>{
+  if(!guardEdit()) return;
   current = JSON.parse(JSON.stringify(current));
   current.id = null;
   current.savedAt = null;
@@ -2071,6 +2196,7 @@ $("#btnDuplicate").addEventListener("click", ()=>{
 });
 
 $("#btnDelete").addEventListener("click", async ()=>{
+  if(!guardEdit()) return;
   if(!current.id) return;
   if(!confirm("Delete this pensioner's record permanently? This cannot be undone.")) return;
   await deleteRecordStorage(current.id);
