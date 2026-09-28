@@ -443,7 +443,7 @@ const SECTIONS = [
   fields:[
     {id:"spouseName", label:"Spouse Name", type:"text"},
     {id:"spouseRelation", label:"Spouse Relation", type:"select", options:["WIFE","HUSBAND"]},
-    {id:"spouseStatus", label:"Spouse Status", type:"select", options:["IN SERVICE","HOUSEWIFE","UN MARRIED","NOT IN SERVICE"]},
+    {id:"spouseStatus", label:"Spouse Status", type:"select", options:["IN SERVICE","HOUSEWIFE","NOT IN SERVICE","UN MARRIED","WIDOW","WIDOWER","DIVORCED","SEPARATED"]},
     {id:"spouseOffice", label:"Spouse Office Name &amp; Address (if in service)", type:"textarea"},
     {id:"spouseDept", label:"Spouse Department (if in service)", type:"text"},
     {id:"spouseDoj", label:"Spouse Date of Joining (if in service)", type:"date"},
@@ -1204,10 +1204,17 @@ function docSBEmploymentCertText(t,c){
   if(t.spouseStatus==="IN SERVICE"){
     return `Certified that ${blank(proper(t.spouseName))}; ${wifeHusband(g)} of ${proper(t.staffName)} is serving / served to the post of ${blank(proper(t.spouseDesignation))} in ${blank(proper(t.spouseOffice))} under the ${blank(proper(t.spouseDept))} since ${blank(fmtDate(t.spouseDoj,"dd-mm-yyyy"))} and to be retired on ${fmtD(c.spouseDor,"dd-mm-yyyy")}. House Rent drawn by both of them is as per GA rules and within the prescribed limit throughout their service.`;
   }
-  if(["HOUSEWIFE","NOT IN SERVICE"].includes(t.spouseStatus)){
-    return `Certified that ${blank(proper(t.spouseName))}; ${wifeHusband(g)} of ${proper(t.staffName)} is ${g==="MALE"?"Housewife and not in service":"Not in Service"}. ${heShe(sg)} was not engaged in any service under the Government of India or any State Government Undertaking or any statutory or Local body, Educational Institution, etc. at anywhere and anytime since or before their marriage, and hence no question for drawn of HRA by ${himHer(sg)}. HRA drawn by ${proper(t.staffName)} is as per Grant-in-Aid rules and within the prescribed limit throughout ${hisHer(g)} service.`;
+  const st = t.spouseStatus;
+  const me = proper(t.staffName);
+  const ownHra = `HRA drawn by ${me} is as per Grant-in-Aid rules and within the prescribed limit throughout ${hisHer(g)} service.`;
+  if(st==="HOUSEWIFE" || st==="NOT IN SERVICE"){
+    const cond = (st==="HOUSEWIFE" && g==="MALE") ? "Housewife and not in service" : "not in service";
+    return `Certified that ${blank(proper(t.spouseName))}; ${wifeHusband(g)} of ${me} is ${cond}. ${heShe(sg)} was not engaged in any service under the Government of India or any State Government Undertaking or any statutory or Local body, Educational Institution, etc. at anywhere and anytime since or before their marriage, and hence no question for drawn of HRA by ${himHer(sg)}. ${ownHra}`;
   }
-  if(t.spouseStatus==="UN MARRIED") return `Certified that ${proper(t.staffName)} is Unmarried.`;
+  if(st==="UN MARRIED") return `Certified that ${me} is Unmarried and hence no question for drawn of HRA by any spouse. ${ownHra}`;
+  if(st==="WIDOW" || st==="WIDOWER") return `Certified that ${me} is a ${st==="WIDOW"?"Widow":"Widower"} and has no spouse living, hence no question for drawn of HRA by spouse. ${ownHra}`;
+  if(st==="DIVORCED") return `Certified that ${me} is Divorced and has no spouse, hence no question for drawn of HRA by spouse. ${ownHra}`;
+  if(st==="SEPARATED") return `Certified that ${me} is living separately from ${hisHer(g)} spouse and no HRA is being drawn by the spouse on account of ${himHer(g)}, hence no question for drawn of HRA by spouse. ${ownHra}`;
   return "";
 }
 
@@ -1879,7 +1886,7 @@ function applyFieldRules(){
   const off = new Set();
   if(!isHoi) CHARGE_FIELDS.forEach(f=>off.add(f));
   if(st !== "IN SERVICE") SPOUSE_SERVICE_FIELDS.forEach(f=>off.add(f));
-  if(st === "UN MARRIED") SPOUSE_PERSONAL_FIELDS.forEach(f=>off.add(f));
+  if(["UN MARRIED","WIDOW","WIDOWER","DIVORCED"].includes(st)) SPOUSE_PERSONAL_FIELDS.forEach(f=>off.add(f));
   $$("[data-field]").forEach(el=>{
     const dis = off.has(el.dataset.field);
     el.disabled = dis;
