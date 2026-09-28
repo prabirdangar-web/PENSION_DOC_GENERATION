@@ -190,6 +190,16 @@
   body.locked #btnImportJson,
   body.locked #btnImportExcel{opacity:.55;}
 
+  /* ---------- Pre-printed letterhead space (7.3 cm from top of paper; adjust 7.1 - 7.5cm here) ---------- */
+  :root{ --lh-space:73mm; --page-top-margin:14mm; }
+  .page.lh-page::before{
+    content:"PRE-PRINTED LETTERHEAD SPACE (" attr(data-lh) ")";
+    display:block; height:calc(var(--lh-space) - 16mm); margin-bottom:4mm;
+    border:1px dashed #9aa3ad; color:#9aa3ad; font:600 10pt Arial,sans-serif;
+    text-align:center; line-height:calc(var(--lh-space) - 16mm);
+  }
+  .page.lh-page .letterhead{display:none;}
+
   /* ---------- Standardized Print Engine (exact A4 fit) ---------- */
   /* The @page margin IS the paper margin; .page fills the printable area exactly
      (no fixed mm width / min-height / padding, which caused overflow & blank pages). */
@@ -253,6 +263,8 @@
       padding: 6mm !important;
       break-inside: avoid;
     }
+    .page.lh-page::before{ display:none !important; content:none !important; }
+    .page.lh-page{ padding-top: calc(var(--lh-space) - var(--page-top-margin)) !important; }
     .page * { visibility: visible !important; }
     .page table { width: 100% !important; table-layout: auto; page-break-inside: auto; }
     .page tr, .page .sig-block-right, .page .sig-box { page-break-inside: avoid; break-inside: avoid; }
@@ -934,7 +946,19 @@ function docAB(t,c){
   `);
 }
 
+/* Primary nominee: spouse if there is one; otherwise the employee himself / herself */
+function primaryNominee(t){
+  const noSpouse = ["UN MARRIED","WIDOW","WIDOWER","DIVORCED"].includes(t.spouseStatus);
+  if(noSpouse){
+    return {self:true, name:proper(t.staffName), addr:proper(t.selfSpouseAddress),
+            rel: t.gender==="FEMALE" ? "Herself" : "Himself", dob:t.dob};
+  }
+  return {self:false, name:proper(t.spouseName), addr:proper(t.selfSpouseAddress),
+          rel:proper(t.spouseRelation), dob:t.spouseDob};
+}
+
 function docE(t,c){
+  const nom = primaryNominee(t);
   const alternates = [
     t.child1Name ? {name:proper(t.child1Name), rel:proper(t.child1Relation), dob:t.child1Dob, share:t.child1GratuityShare} : null,
     t.child2Name ? {name:proper(t.child2Name), rel:proper(t.child2Relation), dob:t.child2Dob, share:t.child2GratuityShare} : null,
@@ -946,7 +970,7 @@ function docE(t,c){
   const equalShare = alternates.length ? Math.round(100/alternates.length) : 100;
   const rows = [];
   
-  const isSpouseMinor = t.spouseDob ? (dateDiffY(toDate(t.spouseDob), c.dor) < 18) : false;
+  const isSpouseMinor = (!nom.self && nom.dob) ? (dateDiffY(toDate(nom.dob), c.dor) < 18) : false;
 
   for(let i=0; i<rowCount; i++){
     const alt = alternates[i];
@@ -956,9 +980,9 @@ function docE(t,c){
     
     let row = "<tr>";
     if(i===0){
-      row += `<td rowspan="${rowCount}" style="width:16%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
-      row += `<td rowspan="${rowCount}" style="width:8%;" class="center">${blank(proper(t.spouseRelation))}</td>`;
-      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}<br><span style="font-size:8pt;">[${dobInWords(t.spouseDob)}]</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:16%;"><strong>(1)</strong> ${blank(nom.name)}<br><span style="font-size:8.5pt;">${blank(nom.addr)}</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:8%;" class="center">${blank(nom.rel)}</td>`;
+      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">${blank(fmtDate(nom.dob,"dd-mm-yyyy"))}<br><span style="font-size:8pt;">[${dobInWords(nom.dob)}]</span></td>`;
       row += `<td rowspan="${rowCount}" style="width:10%;" class="center">${isSpouseMinor ? "Guardian details required" : "N.A."}</td>`;
     }
     
@@ -1051,6 +1075,7 @@ function docE(t,c){
 }
 
 function docD(t,c){
+  const nom = primaryNominee(t);
   const alternates = [
     t.child1Name ? {name:proper(t.child1Name), rel:proper(t.child1Relation), dob:t.child1Dob, share:t.child1GratuityShare} : null,
     t.child2Name ? {name:proper(t.child2Name), rel:proper(t.child2Relation), dob:t.child2Dob, share:t.child2GratuityShare} : null,
@@ -1062,7 +1087,7 @@ function docD(t,c){
   const equalShare = alternates.length ? Math.round(100/alternates.length) : 100;
   const rows = [];
 
-  const spouseAge = t.spouseDob ? ageString(t.spouseDob, c.dor) : "";
+  const spouseAge = nom.dob ? ageString(nom.dob, c.dor) : "";
 
   for(let i=0; i<rowCount; i++){
     const alt = alternates[i];
@@ -1070,9 +1095,9 @@ function docD(t,c){
     
     let row = "<tr>";
     if(i===0){
-      row += `<td rowspan="${rowCount}" style="width:22%;"><strong>(1)</strong> ${blank(proper(t.spouseName))}<br><span style="font-size:8.5pt;">${blank(proper(t.selfSpouseAddress))}</span></td>`;
-      row += `<td rowspan="${rowCount}" style="width:10%;" class="center">${blank(proper(t.spouseRelation))}</td>`;
-      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">${spouseAge ? `${spouseAge} Y+` : ""}<br><span style="font-size:8.pt;">[DOB: ${blank(fmtDate(t.spouseDob,"dd-mm-yyyy"))}]</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:22%;"><strong>(1)</strong> ${blank(nom.name)}<br><span style="font-size:8.5pt;">${blank(nom.addr)}</span></td>`;
+      row += `<td rowspan="${rowCount}" style="width:10%;" class="center">${blank(nom.rel)}</td>`;
+      row += `<td rowspan="${rowCount}" style="width:12%;" class="center">${spouseAge ? `${spouseAge} Y+` : ""}<br><span style="font-size:8pt;">[DOB: ${blank(fmtDate(nom.dob,"dd-mm-yyyy"))}]</span></td>`;
       row += `<td rowspan="${rowCount}" style="width:10%;" class="center">100%</td>`;
       row += `<td rowspan="${rowCount}" style="width:12%;" class="center">Death, Divorce, Remarriage or Insanity</td>`;
     }
@@ -1947,6 +1972,8 @@ function renderSummary(){
   <p class="hint" style="margin-top:14px;">These figures are calculated automatically from the data you entered, using the same formulas as the original workbook (ROPA-19 gratuity &amp; pension rules). Values update live as you edit the Data tab.</p>`;
 }
 
+// Documents printed on the school's pre-printed letterhead paper: top 7.3 cm left blank
+const LETTERHEAD_DOCS = new Set(["SB","HRAC","NOLIACERT","RESC","CHO","CPC","FLP","FLCHO","FLNOLIACPC","FLNOLIA"]);
 function visibleDocs(t){
   const hoi = isApplicantHmOrTic(t);
   const spIn = t.spouseStatus === "IN SERVICE";
@@ -1959,7 +1986,8 @@ function renderDocs(){
   if(!visibleDocs(current).some(d=>d.id===activeDoc)) activeDoc = "COVER";
   const c = compute(current);
   const activeRenderer = DOC_RENDERERS[activeDoc];
-  const html = activeRenderer ? activeRenderer(current, c) : "";
+  let html = activeRenderer ? activeRenderer(current, c) : "";
+  if(LETTERHEAD_DOCS.has(activeDoc)) html = html.replace('<div class="page">','<div class="page lh-page" data-lh="7.3 cm">');
   return `
   <div class="doc-layout">
     <div class="doc-list">
