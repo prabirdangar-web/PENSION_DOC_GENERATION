@@ -79,8 +79,9 @@
   .print-area { display: block !important; width: 100%; }
 
   /* ---------- Printable page (A4 Strict Layout Controls) ---------- */
-  @page { size: portrait; margin: 15mm; }
-  @page landscape-page-setting { size: landscape; margin: 10mm; }
+  @page { size: A4 portrait; margin: 14mm 15mm; }
+  @page portrait-page-setting { size: A4 portrait; margin: 14mm 15mm; }
+  @page landscape-page-setting { size: A4 landscape; margin: 12mm 12mm; }
 
   .page{background:var(--paper);width:210mm;min-height:296mm;margin:0 auto;padding:16mm 16mm 14mm;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:"Times New Roman",Georgia,serif;font-size:11.5pt;line-height:1.45;color:#111;position:relative;}
   
@@ -188,43 +189,76 @@
   body.locked #btnImportJson,
   body.locked #btnImportExcel{opacity:.55;}
 
-  /* ---------- Standardized Print Engine ---------- */
+  /* ---------- Standardized Print Engine (exact A4 fit) ---------- */
+  /* The @page margin IS the paper margin; .page fills the printable area exactly
+     (no fixed mm width / min-height / padding, which caused overflow & blank pages). */
   @media print{
     html, body {
       height: auto !important;
       overflow: visible !important;
       background: #fff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    .sidebar, .topbar, .tabs, .doc-list, .preview-toolbar, #formActions, fieldset, .summary-grid { 
-      display: none !important; 
+    .sidebar, .topbar, .tabs, .doc-list, .preview-toolbar, #formActions, fieldset, .summary-grid,
+    .modal-overlay, .lock-banner, .form-actions {
+      display: none !important;
     }
-    .app, .main, .content, .doc-layout, .doc-preview-wrap, .print-area { 
-      display: block !important; 
+    .app, .main, .content, .doc-layout, .doc-preview-wrap, .print-area {
+      display: block !important;
       position: static !important;
       overflow: visible !important;
-      width: 100% !important; 
-      margin: 0 !important; 
-      padding: 0 !important; 
-      min-height: auto !important; 
-      background: transparent !important; 
-      box-shadow: none !important; 
+      width: 100% !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      min-height: 0 !important;
+      height: auto !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
     }
-    .page { 
-      box-shadow: none !important; 
-      margin: 0 auto !important; 
-      page-break-after: always !important; 
-      visibility: visible !important; 
+    .page {
+      box-sizing: border-box !important;
+      width: 100% !important;
+      max-width: none !important;
+      min-height: 0 !important;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      transform: none !important;
+      background: #fff !important;
+      page: portrait-page-setting;
+      break-after: page;
+      page-break-after: always;
+      visibility: visible !important;
       display: block !important;
+      font-size: 11pt;
     }
+    .page:last-child { break-after: auto; page-break-after: auto !important; }
     .page.landscape-layout {
       page: landscape-page-setting !important;
+      width: 100% !important;
+      min-height: 0 !important;
     }
-    .page * { 
-      visibility: visible !important; 
+    /* Half-A4 cover label: full printable width, fixed half-page height, kept on one sheet */
+    .page.cover-poster-layout {
+      width: 100% !important;
+      height: 140mm !important;
+      min-height: 0 !important;
+      padding: 6mm !important;
+      overflow: hidden !important;
+      break-inside: avoid;
     }
-    .page:last-child { 
-      page-break-after: auto !important; 
-    }
+    .page * { visibility: visible !important; }
+    .page table { width: 100% !important; table-layout: auto; page-break-inside: auto; }
+    .page tr, .page .sig-block-right, .page .sig-box { page-break-inside: avoid; break-inside: avoid; }
+    .page thead { display: table-header-group; }
+    .page h2, .page h3 { page-break-after: avoid; }
+    .page .letterhead { margin-top: 0; }
   }
 </style>
   <!-- SheetJS: browser-side Excel (.xls/.xlsx) reader -->
