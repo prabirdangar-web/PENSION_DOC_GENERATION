@@ -59,6 +59,8 @@
   }
   textarea{resize:vertical;min-height:44px;}
   input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:0;border-color:var(--gold);}
+  .field.is-disabled label{opacity:.5;}
+  input:disabled,select:disabled,textarea:disabled{background:#eceef1 !important;color:#9aa3ad !important;cursor:not-allowed;border-style:dashed;}
   .hint{font-size:10.5px;color:#8a93a0;margin-top:2px;}
   .form-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 22px;display:flex;gap:10px;justify-content:flex-end;}
   
@@ -96,8 +98,7 @@
   .page.cover-poster-layout {
     width: 210mm !important;
     min-height: 148mm !important;
-    height: 148mm !important;
-    overflow: hidden;
+    height: auto !important;
     border: 3px double var(--navy);
     padding: 10mm !important;
     background: #fffdf9;
@@ -247,10 +248,9 @@
     /* Half-A4 cover label: full printable width, fixed half-page height, kept on one sheet */
     .page.cover-poster-layout {
       width: 100% !important;
-      height: 140mm !important;
-      min-height: 0 !important;
+      height: auto !important;
+      min-height: 140mm !important;
       padding: 6mm !important;
-      overflow: hidden !important;
       break-inside: avoid;
     }
     .page * { visibility: visible !important; }
@@ -396,6 +396,7 @@ const SECTIONS = [
     {id:"employeeCode", label:"Employee Code", type:"text"},
     {id:"applicationId", label:"Application ID", type:"text"},
     {id:"employeeMobile", label:"Employee Mobile No.", type:"text"},
+    {id:"qualification", label:"Educational Qualification", type:"text", hint:"Shown in a single line on the Cover Page, e.g. M.A., B.Ed."},
     {id:"dob", label:"Date of Birth", type:"date"},
     {id:"lastGradePay", label:"Last Grade Pay", type:"select", options:GRADE_PAYS.map(g=>String(g.gp))}
   ]
@@ -488,6 +489,7 @@ function defaultRecord(){
   const d = {id:null, savedAt:null};
   SECTIONS.forEach(sec=>sec.fields.forEach(f=>{ d[f.id] = f.type==="number" ? "" : ""; }));
   d.gender = "MALE";
+  d.schoolMail = "@gmail.com";
   d.hoiStatus = "HEADMASTER";
   d.adminStatus = "President [M.C.]";
   d.hraMode = "PERCENT";
@@ -721,7 +723,7 @@ function hoiSignatory(t){
 
 function isApplicantHmOrTic(t){
   const desig = upper(t.designation || "");
-  return desig.includes("HEADMASTER") || desig.includes("HEADMISTRESS") || desig.includes("TEACHER-IN-CHARGE") || desig.includes("TIC") || desig.includes("HM");
+  return ["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"].includes(desig.trim());
 }
 
 function employeeRecipient(t){
@@ -807,27 +809,32 @@ function letterhead(t){
 }
 
 function docCOVER(t,c){
+  const q = upper(safe(t.qualification||""));
+  const qSize = q.length>60 ? 11 : q.length>45 ? 13 : q.length>32 ? 15 : 18;
+  const lbl = 'width:34%; font-weight:bold; padding:5px 0; border:none; color:var(--muted); font-size:14pt; white-space:nowrap;';
+  const val = 'font-weight:bold; padding:5px 0; border:none; font-size:17pt; color:var(--navy-dark);';
   return `<div class="page cover-poster-layout">
-    <div style="border:1px solid var(--navy); height:100%; padding:8mm; position:relative; display:flex; flex-direction:column; justify-content:space-between;">
+    <div style="border:1px solid var(--navy); min-height:128mm; padding:7mm; position:relative; display:flex; flex-direction:column; justify-content:space-between; gap:4mm;">
       <div style="text-align:center;">
-        <div style="font-size:16pt; font-weight:bold; color:var(--navy); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2mm;">${blank(upper(t.schoolName))}</div>
-        <div style="font-size:10pt; color:#444; font-weight:600; margin-bottom:4mm;">${blank(proper(t.schoolAddress))}</div>
-        <div style="border-top:2px solid var(--navy); width:60mm; margin:0 auto 4mm auto;"></div>
-        <h2 style="font-size:13pt; font-weight:bold; color:var(--navy-dark); text-transform:uppercase; margin:2mm 0; letter-spacing:0.3px; line-height:1.3;">PENSION APPLICATION CASE FILE</h2>
-        <div style="font-size:9.5pt; color:var(--muted); font-weight:bold;">SUB-DIVISION: ${upper(safe(t.schoolSubDiv))} &nbsp;|&nbsp; TREASURY: ${upper(safe(t.treasury))}</div>
+        <div style="font-size:22pt; font-weight:bold; color:var(--navy); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2mm; line-height:1.2;">${blank(upper(t.schoolName))}</div>
+        <div style="font-size:12pt; color:#333; font-weight:600; margin-bottom:3mm;">${blank(proper(t.schoolAddress))}</div>
+        <div style="border-top:2px solid var(--navy); width:70mm; margin:0 auto 3mm auto;"></div>
+        <h2 style="font-size:20pt; font-weight:bold; color:var(--navy-dark); text-transform:uppercase; margin:2mm 0; letter-spacing:0.3px; line-height:1.25;">PENSION APPLICATION CASE FILE</h2>
+        <div style="font-size:12.5pt; color:var(--muted); font-weight:bold;">SUB-DIVISION: ${upper(safe(t.schoolSubDiv))} &nbsp;|&nbsp; TREASURY: ${upper(safe(t.treasury))}</div>
       </div>
-      
-      <div style="margin:4mm 0; background:rgba(27,58,92,0.03); padding:4mm; border-radius:4px;">
-        <table style="width:100%; margin:0; font-size:10.5pt; border:none;">
-          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE NAME:</td><td style="font-weight:bold; padding:4px 0; border:none; color:var(--navy-dark); font-size:11pt;">${blank(upper(t.staffName))}</td></tr>
-          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">DESIGNATION:</td><td style="font-weight:bold; padding:4px 0; border:none;">${blank(upper(t.designation))}</td></tr>
-          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">RETIREMENT DATE:</td><td style="font-weight:bold; padding:4px 0; border:none; color:#a4322a;">${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):'[DOB REQUIRED]'}</td></tr>
-          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">EMPLOYEE CODE:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.employeeCode)}</td></tr>
-          <tr style="border:none;"><td style="width:40%; font-weight:bold; padding:4px 0; border:none; color:var(--muted);">APPLICATION ID:</td><td style="font-family:monospace; padding:4px 0; border:none;">${blank(t.applicationId)}</td></tr>
+
+      <div style="background:rgba(27,58,92,0.04); padding:4mm 5mm; border-radius:4px;">
+        <table style="width:100%; margin:0; border:none;">
+          <tr style="border:none;"><td style="${lbl}">EMPLOYEE NAME:</td><td style="${val} font-size:21pt;">${blank(upper(t.staffName))}</td></tr>
+          <tr style="border:none;"><td style="${lbl}">QUALIFICATION:</td><td style="${val} font-size:${qSize}pt; white-space:nowrap;">${blank(q)}</td></tr>
+          <tr style="border:none;"><td style="${lbl}">DESIGNATION:</td><td style="${val}">${blank(upper(t.designation))}</td></tr>
+          <tr style="border:none;"><td style="${lbl}">RETIREMENT DATE:</td><td style="${val} color:#a4322a;">${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):'[DOB REQUIRED]'}</td></tr>
+          <tr style="border:none;"><td style="${lbl}">EMPLOYEE CODE:</td><td style="${val} font-family:monospace;">${blank(t.employeeCode)}</td></tr>
+          <tr style="border:none;"><td style="${lbl}">APPLICATION ID:</td><td style="${val} font-family:monospace;">${blank(t.applicationId)}</td></tr>
         </table>
       </div>
-      
-      <div style="display:flex; justify-content:space-between; align-items:center; font-size:8.5pt; color:var(--muted); border-top:1px dashed var(--line); padding-top:2mm;">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:12pt; font-weight:bold; color:var(--muted); border-top:1px dashed var(--line); padding-top:2mm;">
         <div>DISE CODE: ${blank(t.diseCode)}</div>
         <div>MOBILE: ${blank(t.employeeMobile)}</div>
       </div>
@@ -899,9 +906,9 @@ function docAB(t,c){
           Three Specimen Signatures of Pensioner to be given below, duly attested by Gr. &lsquo;A&rsquo; / erstwhile Gazetted Officer. (For use at the Directorate of Pension, Provident Fund and Group Insurance).
         </p>
         
-        <div style="text-align:left; font-size:12.5pt; font-weight:bold; margin:15px 0 20px 0;">
-          Name of the Pensioner: <span style="text-decoration:underline;">${upper(blank(t.staffName))}</span>
-          <div style="font-size:9.5pt; font-weight:normal; margin-top:2px; color:#333;">[In Block Letters]</div>
+        <div style="text-align:left; font-size:17pt; font-weight:bold; margin:15px 0 20px 0; line-height:1.3;">
+          Name of the Pensioner: <span style="text-decoration:underline; font-size:19pt;">${upper(blank(t.staffName))}</span>
+          <div style="font-size:11pt; font-weight:normal; margin-top:2px; color:#333;">[In Block Letters]</div>
         </div>
       </div>
 
@@ -1346,7 +1353,7 @@ function docFLP(t,c){
       <li>Age proof and all academic certificates of the employee.</li>
       <li>Approval(s) of Appointment of the employee.</li>
       <li>All I.P.F.(s) of ROPA - 1998, 2009, 2019 in Original with option and one set Xerox.</li>
-      <li>Declaration and Statement of HRA jointly drawn by the employee and spouse (if applicable).</li>
+      ${t.spouseStatus==="IN SERVICE" ? `<li>Declaration and Statement of HRA jointly drawn by the employee and spouse.</li>` : ``}
       <li>Certificate regarding employment / non-employment of spouse and HRA.</li>
       <li>Pay Certificate (Part-C in format).</li>
       <li>No Liabilities Certificate (in format).</li>
@@ -1863,10 +1870,34 @@ function renderField(f){
   return `<div class="field"><label>${f.label}</label>${input}${hint}</div>`;
 }
 
+const CHARGE_FIELDS = ["chargeHandOverCause","chargeHandOverToName","chargeHandOverToPost","chargeHandOverDate","ticChargeFrom"];
+const SPOUSE_SERVICE_FIELDS = ["spouseOffice","spouseDept","spouseDoj","spouseDesignation"];
+const SPOUSE_PERSONAL_FIELDS = ["spouseName","spouseRelation","spouseDob","spouseBankName","spouseBranchName","spouseAccountNo"];
+function applyFieldRules(){
+  const isHoi = isApplicantHmOrTic(current);
+  const st = current.spouseStatus;
+  const off = new Set();
+  if(!isHoi) CHARGE_FIELDS.forEach(f=>off.add(f));
+  if(st !== "IN SERVICE") SPOUSE_SERVICE_FIELDS.forEach(f=>off.add(f));
+  if(st === "UN MARRIED") SPOUSE_PERSONAL_FIELDS.forEach(f=>off.add(f));
+  $$("[data-field]").forEach(el=>{
+    const dis = off.has(el.dataset.field);
+    el.disabled = dis;
+    const box = el.closest(".field");
+    if(box) box.classList.toggle("is-disabled", dis);
+  });
+}
+
 function wireFormInputs(){
+  applyFieldRules();
+  const mailEl = $('[data-field="schoolMail"]');
+  if(mailEl) mailEl.addEventListener("focus", ()=>{
+    if(mailEl.value === "@gmail.com") setTimeout(()=>mailEl.setSelectionRange(0,0),0);   // type the ID before @gmail.com
+  });
   $$("[data-field]").forEach(el=>{
     el.addEventListener("input", ()=>{
       current[el.dataset.field] = el.value;
+      applyFieldRules();
       dirty = true;
       updateSaveStatus();
       const hint = $("#content .sum-card .val");
@@ -1874,6 +1905,7 @@ function wireFormInputs(){
     });
     el.addEventListener("change", ()=>{
       current[el.dataset.field] = el.value;
+      applyFieldRules();
       dirty = true; updateSaveStatus();
     });
   });
@@ -1910,7 +1942,11 @@ function renderSummary(){
 
 function visibleDocs(t){
   const hoi = isApplicantHmOrTic(t);
-  return DOC_LIST.filter(d => hoi || !["FLCHO","CHO"].includes(d.id));   // charge hand-over papers only for HM / TIC
+  const spIn = t.spouseStatus === "IN SERVICE";
+  return DOC_LIST.filter(d =>
+    (hoi || !["FLCHO","CHO"].includes(d.id)) &&      // charge hand-over papers only for HM / TIC
+    (spIn || d.id !== "HRAD")                        // HRA declaration only when spouse is in service
+  );
 }
 function renderDocs(){
   if(!visibleDocs(current).some(d=>d.id===activeDoc)) activeDoc = "COVER";
