@@ -396,7 +396,8 @@ const SECTIONS = [
     {id:"hraMode", label:"HRA Type", type:"select", options:["PERCENT","FIXED"], hint:"Choose PERCENT to enter a rate below, or FIXED to enter a flat amount."},
     {id:"hraPercentValue", label:"HRA Rate (%), if PERCENT", type:"number", hint:"e.g. 12 or 15 — only used when HRA Type is PERCENT."},
     {id:"hraFixedAmount", label:"Fixed HRA Amount (Rs.), if FIXED", type:"number", hint:"e.g. 3600 — only used when HRA Type is FIXED. Enter your school's actual fixed HRA."},
-    {id:"commutationPercent", label:"Commutation (%) e.g. 0.4 = 40%", type:"number"},
+    {id:"commutationOpted", label:"Commutation Pension [Yes / No]", type:"select", options:["YES","NO"]},
+    {id:"commutationPercent", label:"Commutation (%) — enter 40 for 40%", type:"number", hint:"Enter the whole percentage, e.g. 40 (older records saved as 0.4 are still read correctly). Ignored when Commutation is NO."},
     {id:"ppoNo", label:"PPO No.", type:"text"},
     {id:"ppoMemo", label:"PPO Memo No. &amp; Date", type:"text"},
     {id:"pfGross", label:"PF Gross (Rs.)", type:"number"}
@@ -456,6 +457,7 @@ function defaultRecord(){
   d.hoiStatus = "HEADMASTER";
   d.adminStatus = "President [M.C.]";
   d.hraMode = "PERCENT";
+  d.commutationOpted = "YES";
   d.hraPercentValue = "12";
   d.hraFixedAmount = "3600";
   d.spouseRelation = "WIFE";
@@ -515,7 +517,7 @@ function sampleRecord(){
     hraMode: "PERCENT",
     hraPercentValue: "12",
     hraFixedAmount: "6216",
-    commutationPercent: "0.4",
+    commutationPercent: "40",
     ppoNo: "12021320240148",
     ppoMemo: "SEC/BNK/24/F/0597, DATE: 24-Jun-2024",
     pfGross: "",
@@ -726,7 +728,10 @@ function compute(t){
   c.daAmount = Math.round(lastBasic*da/100);
   c.reckonableGratuity = c.lastBasicReckonable + c.daAmount;
   c.gratuityAmount = Math.min(c.reckonableGratuity*c.qualHalfYears/2, 1200000);
-  c.commutationPct = Number(t.commutationPercent)||0;
+  // Commutation % may arrive as 40 (collection form) or 0.4 (old Excel) -> always use a fraction here
+  let cpRaw = Number(String(t.commutationPercent||"").replace("%","").trim())||0;
+  c.commutationPct = cpRaw >= 1 ? cpRaw/100 : cpRaw;
+  if(String(t.commutationOpted||"").toUpperCase()==="NO") c.commutationPct = 0;
   c.reckonablePension = c.lastBasicReckonable * Math.min(c.qualHalfYears,20)/20;
   c.pensionBasic = c.qualHalfYears<10 ? 0 : (c.qualHalfYears<20 ? Math.round((c.lastBasicReckonable/2)*(c.qualHalfYears/20)) : Math.round(c.lastBasicReckonable/2));
   c.commutationAmount = Math.round(c.pensionBasic*c.commutationPct);
@@ -1869,14 +1874,19 @@ function renderSummary(){
   <p class="hint" style="margin-top:14px;">These figures are calculated automatically from the data you entered, using the same formulas as the original workbook (ROPA-19 gratuity &amp; pension rules). Values update live as you edit the Data tab.</p>`;
 }
 
+function visibleDocs(t){
+  const hoi = isApplicantHmOrTic(t);
+  return DOC_LIST.filter(d => hoi || !["FLCHO","CHO"].includes(d.id));   // charge hand-over papers only for HM / TIC
+}
 function renderDocs(){
+  if(!visibleDocs(current).some(d=>d.id===activeDoc)) activeDoc = "COVER";
   const c = compute(current);
   const activeRenderer = DOC_RENDERERS[activeDoc];
   const html = activeRenderer ? activeRenderer(current, c) : "";
   return `
   <div class="doc-layout">
     <div class="doc-list">
-      ${DOC_LIST.map(d=>`<button class="doc-btn ${activeDoc===d.id?'active':''}" data-doc="${d.id}">${d.name}<small>${d.sub}</small></button>`).join("")}
+      ${visibleDocs(current).map(d=>`<button class="doc-btn ${activeDoc===d.id?'active':''}" data-doc="${d.id}">${d.name}<small>${d.sub}</small></button>`).join("")}
     </div>
     <div class="doc-preview-wrap">
       <div class="preview-toolbar">
@@ -1957,6 +1967,22 @@ const EXCEL_FIELD_MAP={
 "CHARGE HAND OVER CAUSE":"chargeHandOverCause","CHARGE HAND OVER TO [POST]":"chargeHandOverToPost","CHARGE HAND OVER DATE EXECUTION":"chargeHandOverDate",
 "HOI STATUS":"hoiStatus","ADMINISTRATIVE STATUS":"adminStatus"
 };
+/* Also accept the exact field IDs and labels used by the Pension Data Collection form */
+(function(){
+  const strip=x=>String(x).replace(/&amp;/g,"&");
+  SECTIONS.forEach(sec=>sec.fields.forEach(f=>{
+    [f.id,f.label].forEach(k=>{
+      const n=normalizeExcelLabel(strip(k));
+      if(n && !EXCEL_FIELD_MAP[n]) EXCEL_FIELD_MAP[n]=f.id;
+    });
+  }));
+  Object.assign(EXCEL_FIELD_MAP,{
+    "COMMUTATION PENSION [YES / NO]":"commutationOpted","COMMUTATION OPTED":"commutationOpted",
+    "HRA TYPE":"hraMode","PF GROSS":"pfGross","PPO MEMO NO & DATE":"ppoMemo",
+    "POST HELD AT PREVIOUS SCHOOL - 1":"prevSchoolPost1","POST HELD AT PREVIOUS SCHOOL - 2":"prevSchoolPost2",
+    "PREVIOUS SCHOOL (S) POSTS-2":"prevSchoolPost2","PREV SCHOOL POST-2":"prevSchoolPost2"
+  });
+})();
 const EXCEL_DATE_FIELDS=new Set(["schoolRecognisedDate","dob","dojFirst","dojPrevSchool2","dojThisSchool","spouseDoj","spouseDob","child1Dob","child2Dob","child3Dob","lastIncrementDate","existingIncrementDate","chargeHandOverDate","ticChargeFrom"]);
 function normalizeExcelLabel(v){
   return String(v??"").replace(/\u00a0/g," ").replace(/\r?\n/g," ").replace(/\s+/g," ").trim().toUpperCase()
@@ -1987,18 +2013,25 @@ function excelDateToISO(v){
 }
 function excelValue(fieldId,v){
   if(v===null||v===undefined)return "";
+  if(fieldId==="commutationPercent"){
+    const n=Number(String(v).replace("%","").trim());
+    if(!isNaN(n)&&String(v).trim()!=="") return String(n>0&&n<1 ? Math.round(n*10000)/100 : n);
+  }
   if(EXCEL_DATE_FIELDS.has(fieldId))return excelDateToISO(v);
   return String(v).trim();
 }
 function applyImportedValue(rec,label,value){
   const key=excelKey(label); if(!key)return false;
   const v=excelValue(key,value); if(v!=="")rec[key]=v;
+  if(key==="hraMode"&&v!=="")rec.__hraSet=true;
   return true;
 }
 function finishImportedRecord(rec){
   const out=Object.assign(defaultRecord(),rec);
   ["medicalLeave","halfPayLeave","extraOrdinaryLeave","specialLeave"].forEach(k=>{if(/^[_\s-]+$/.test(String(out[k]||"")))out[k]="";});
-  if(out.hraFixedAmount && !out.hraPercentValue) out.hraMode="FIXED"; else out.hraMode="PERCENT";
+  if(out.__hraSet) out.hraMode = String(out.hraMode).toUpperCase()==="FIXED" ? "FIXED" : "PERCENT";   // explicit choice from the collection form
+  else if(out.hraFixedAmount && !out.hraPercentValue) out.hraMode="FIXED"; else out.hraMode="PERCENT";
+  delete out.__hraSet;
   out.id=newId(); out.savedAt=new Date().toISOString(); return out;
 }
 function parseVerticalData(rows){
