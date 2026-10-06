@@ -278,6 +278,7 @@
   .inbox-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
   .inbox-list{overflow:auto;border:1px solid var(--line);border-radius:6px;flex:1;min-height:120px;}
   .modal-box .inbox-row{margin:0;color:var(--ink);}
+  .modal-box .btn-ghost:hover{background:#eef3f7;}
   .inbox-row{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-bottom:1px solid #eef0f2;font-size:12.5px;}
   .inbox-row:last-child{border-bottom:none;}
   .inbox-row .nm{font-weight:700;color:var(--navy);}
@@ -285,6 +286,15 @@
   .inbox-row .tag{font-size:10px;padding:1px 6px;border-radius:10px;background:#fff3d6;color:#8a5a00;margin-left:6px;}
   .inbox-row .tag.dup{background:#fbe6e4;color:var(--danger);}
   .inbox-row .tag.done{background:#e2f3e8;color:var(--ok);}
+
+  /* ---------- Share link modal ---------- */
+  .share-link{display:flex;gap:8px;margin:6px 0 10px;}
+  .share-link input{flex:1;font-family:Consolas,monospace;font-size:12.5px;}
+  .guide-box{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:0 0 10px;background:#f8fafc;}
+  .guide-box h4{margin:0 0 6px;color:var(--navy);font-size:13.5px;}
+  .guide-box ol{margin:0;padding-left:20px;font-size:12.5px;line-height:1.6;color:var(--ink);}
+  .btn-wa{background:#25D366;color:#fff;}
+  .btn-wa:hover{background:#1ebe5b;}
 </style>
   <!-- SheetJS: browser-side Excel (.xls/.xlsx) reader -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -312,7 +322,7 @@
     <input type="file" id="fileImportJson" accept="application/json,.json" style="display:none;">
     <button class="btn btn-ghost btn-block" id="btnImportExcel">⬆ Import Excel (DATA)</button>
     <input type="file" id="fileImportExcel" accept=".xls,.xlsx,.xlsm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
-    <a class="btn btn-ghost btn-block" id="btnQuickShare" href="https://prabirdangar-web.github.io/pension_data_collection/" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;">🔗 Quick Share (Data Collection Form)</a>
+    <button class="btn btn-ghost btn-block" id="btnQuickShare">🔗 Share Link &amp; Guide (Data Collection)</button>
     <button class="btn btn-primary btn-block" id="btnFetchInbox">📥 Fetch Submissions (Google Sheet)</button>
     <input class="search-box" id="searchBox" placeholder="Search saved records...">
     <div class="rec-list" id="recList"></div>
@@ -328,7 +338,7 @@
       </div>
     </div>
 
-    <div class="side-foot">Data is synced live to Firebase and stays available across sessions and devices. Records are <strong>view-only until you log in</strong>; use Export/Import to back up records as JSON files. Share the <strong>Quick Share</strong> link with staff; their submissions go straight to the school's Google Sheet. Click <strong>Fetch Submissions</strong> to bring them in here (no JSON files needed).</div>
+    <div class="side-foot">Data is synced live to Firebase and stays available across sessions and devices. Records are <strong>view-only until you log in</strong>; use Export/Import to back up records as JSON files. Use <strong>Share Link &amp; Guide</strong> to send staff the data-collection link; their submissions go straight to the school's Google Sheet. Click <strong>Fetch Submissions</strong> to bring them in here (no JSON files needed).</div>
   </div>
 
   <!-- MAIN -->
@@ -377,6 +387,48 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" style="color:var(--navy);border-color:var(--line);" id="btnInboxSelAll">Select all new</button>
       <button class="btn btn-primary" id="btnInboxImport">Import Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE LINK MODAL -->
+<div class="modal-overlay" id="shareModal" hidden>
+  <div class="modal-box wide">
+    <button class="modal-close" id="btnShareClose" aria-label="Close">✕</button>
+    <h3>Share Data Collection Link</h3>
+    <p class="sub">Send this link to staff. They fill the form online and it reaches your Google Sheet; you then import it with <b>Fetch Submissions</b>.</p>
+    <label>Staff submission link</label>
+    <div class="share-link">
+      <input type="text" id="shareUrl" readonly>
+      <button class="btn btn-primary" id="btnCopyLink">Copy</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="btn btn-wa" id="btnShareWA">Share on WhatsApp</button>
+      <button class="btn btn-ghost" style="color:var(--navy);border-color:var(--line);" id="btnCopyMsg">Copy full message</button>
+      <button class="btn btn-ghost" style="color:var(--navy);border-color:var(--line);" id="btnOpenForm">Open form</button>
+    </div>
+    <div style="overflow:auto;flex:1;">
+      <div class="guide-box">
+        <h4>Guide for staff (included in the message)</h4>
+        <ol>
+          <li>Open the link on a mobile or computer with internet.</li>
+          <li>Fill <b>School Information</b> and <b>Employee Details</b>. Only <b>Name of the Staff</b> and <b>Number of previous schools</b> are compulsory.</li>
+          <li>Fill education and service rows. Boxes that do not apply turn grey automatically.</li>
+          <li>Enter Commutation as a whole number (for 40% type <b>40</b>, not 0.4).</li>
+          <li>Tap <b>Submit Details</b> once and wait for the green tick with a <b>Reference number</b>. Take a screenshot of it.</li>
+          <li>If an error shows, your entries are kept. Check internet and tap Submit again.</li>
+        </ol>
+      </div>
+      <div class="guide-box">
+        <h4>Guide for you (office)</h4>
+        <ol>
+          <li>Log in, click <b>📥 Fetch Submissions</b> and then <b>Refresh</b>.</li>
+          <li>Tick the records to bring in (ones marked <i>already in portal</i> are left unticked) and click <b>Import Selected</b>.</li>
+          <li>Open each imported record, check the data, add anything missing and click <b>Save Record</b>.</li>
+          <li>Go to <b>3. Documents / Print</b> to print the pension papers.</li>
+          <li>Imported rows are marked IMPORTED in the Sheet, so they are not imported twice.</li>
+        </ol>
+      </div>
     </div>
   </div>
 </div>
@@ -2416,14 +2468,21 @@ function inboxErr(m){ $("#inboxErr").textContent = m || ""; }
 async function inboxCall(params, body){
   const url = inboxUrl(), key = inboxKey();
   if(!url || !key) throw new Error("Set the Web App URL and Admin Key in Settings first.");
+  const ctl = new AbortController();
+  const timer = setTimeout(()=>ctl.abort(), 45000);
   let res;
-  if(body){
-    res = await fetch(url, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body: JSON.stringify(Object.assign({key}, body))});
-  } else {
-    const q = new URLSearchParams(Object.assign({key}, params)).toString();
-    res = await fetch(url + (url.includes("?")?"&":"?") + q);
-  }
+  try{
+    if(body){
+      res = await fetch(url, {method:"POST", signal:ctl.signal, headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body: JSON.stringify(Object.assign({key}, body))});
+    } else {
+      const q = new URLSearchParams(Object.assign({key}, params)).toString();
+      res = await fetch(url + (url.includes("?")?"&":"?") + q, {signal:ctl.signal});
+    }
+  }catch(e){
+    if(e.name==="AbortError") throw new Error("No reply from Apps Script after 45 seconds. Click Refresh to try again.");
+    throw e;
+  }finally{ clearTimeout(timer); }
   const j = await res.json();
   if(!j.ok) throw new Error(j.error || "Server error");
   return j;
@@ -2453,7 +2512,7 @@ function renderInbox(){
 }
 
 async function loadInbox(){
-  inboxErr(""); $("#inboxList").innerHTML = `<div style="padding:14px;color:var(--muted);">Loading…</div>`;
+  inboxErr(""); $("#inboxList").innerHTML = `<div style="padding:14px;color:var(--muted);">Loading… (the first call after a pause can take up to 15 seconds)</div>`;
   try{
     const j = await inboxCall({action:"list"});
     inboxItems = j.items || [];
@@ -2514,6 +2573,37 @@ $("#btnInboxImport").addEventListener("click", async ()=>{
     inboxErr("Import failed: " + (e.message||e));
   }
 });
+
+/* =========================================================================
+   SHARE LINK & GUIDE
+   ========================================================================= */
+const SHARE_URL = "https://prabirdangar-web.github.io/pension_data_collection/";
+function shareMessage(){
+  return "Dear Colleague,\n\nPlease submit your Pension / Superannuation details online using this link:\n" + SHARE_URL +
+"\n\nHow to fill:\n1. Open the link on your mobile/computer.\n2. Fill School Information and Employee Details (compulsory: Name of the Staff, Number of previous schools).\n3. Fill education and service rows; boxes that do not apply turn grey.\n4. Commutation: enter whole number, e.g. 40 for 40%.\n5. Tap Submit Details ONCE and wait for the green tick with a Reference number. Keep a screenshot.\n6. If an error shows, check internet and tap Submit again.\n\nThank you.\n- Headmaster";
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} ta.remove(); return ok;
+  }
+}
+$("#btnQuickShare").addEventListener("click", ()=>{ $("#shareUrl").value = SHARE_URL; $("#shareModal").hidden = false; });
+$("#btnShareClose").addEventListener("click", ()=>{ $("#shareModal").hidden = true; });
+$("#shareModal").addEventListener("click", e=>{ if(e.target.id==="shareModal") $("#shareModal").hidden = true; });
+$("#btnCopyLink").addEventListener("click", async ()=>{
+  const b=$("#btnCopyLink"); b.textContent = (await copyText(SHARE_URL)) ? "Copied ✓" : "Copy failed";
+  setTimeout(()=>{ b.textContent="Copy"; }, 1800);
+});
+$("#btnCopyMsg").addEventListener("click", async ()=>{
+  const b=$("#btnCopyMsg"); b.textContent = (await copyText(shareMessage())) ? "Message copied ✓" : "Copy failed";
+  setTimeout(()=>{ b.textContent="Copy full message"; }, 1800);
+});
+$("#btnShareWA").addEventListener("click", ()=>{
+  window.open("https://wa.me/?text=" + encodeURIComponent(shareMessage()), "_blank", "noopener");
+});
+$("#btnOpenForm").addEventListener("click", ()=>{ window.open(SHARE_URL, "_blank", "noopener"); });
 
 (async function init(){
   await refreshRecordList();
