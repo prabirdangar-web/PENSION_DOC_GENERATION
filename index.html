@@ -272,6 +272,19 @@
     .page h2, .page h3 { page-break-after: avoid; }
     .page .letterhead { margin-top: 0; }
   }
+
+  /* ---------- Collection Inbox (Apps Script) ---------- */
+  .modal-box.wide{max-width:760px;max-height:88vh;display:flex;flex-direction:column;}
+  .inbox-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+  .inbox-list{overflow:auto;border:1px solid var(--line);border-radius:6px;flex:1;min-height:120px;}
+  .modal-box .inbox-row{margin:0;color:var(--ink);}
+  .inbox-row{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-bottom:1px solid #eef0f2;font-size:12.5px;}
+  .inbox-row:last-child{border-bottom:none;}
+  .inbox-row .nm{font-weight:700;color:var(--navy);}
+  .inbox-row .meta{font-size:11px;color:var(--muted);}
+  .inbox-row .tag{font-size:10px;padding:1px 6px;border-radius:10px;background:#fff3d6;color:#8a5a00;margin-left:6px;}
+  .inbox-row .tag.dup{background:#fbe6e4;color:var(--danger);}
+  .inbox-row .tag.done{background:#e2f3e8;color:var(--ok);}
 </style>
   <!-- SheetJS: browser-side Excel (.xls/.xlsx) reader -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -300,6 +313,7 @@
     <button class="btn btn-ghost btn-block" id="btnImportExcel">⬆ Import Excel (DATA)</button>
     <input type="file" id="fileImportExcel" accept=".xls,.xlsx,.xlsm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
     <a class="btn btn-ghost btn-block" id="btnQuickShare" href="https://prabirdangar-web.github.io/pension_data_collection/" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;">🔗 Quick Share (Data Collection Form)</a>
+    <button class="btn btn-primary btn-block" id="btnFetchInbox">📥 Fetch Submissions (Google Sheet)</button>
     <input class="search-box" id="searchBox" placeholder="Search saved records...">
     <div class="rec-list" id="recList"></div>
     <div id="sideStatus"></div>
@@ -314,7 +328,7 @@
       </div>
     </div>
 
-    <div class="side-foot">Data is synced live to Firebase and stays available across sessions and devices. Records are <strong>view-only until you log in</strong>; use Export/Import to back up records as JSON files. Share the <strong>Quick Share</strong> link with staff to collect their pension data online, then import their submission here.</div>
+    <div class="side-foot">Data is synced live to Firebase and stays available across sessions and devices. Records are <strong>view-only until you log in</strong>; use Export/Import to back up records as JSON files. Share the <strong>Quick Share</strong> link with staff; their submissions go straight to the school's Google Sheet. Click <strong>Fetch Submissions</strong> to bring them in here (no JSON files needed).</div>
   </div>
 
   <!-- MAIN -->
@@ -338,6 +352,33 @@
     </div>
   </div>
 
+</div>
+
+<!-- COLLECTION INBOX MODAL -->
+<div class="modal-overlay" id="inboxModal" hidden>
+  <div class="modal-box wide">
+    <button class="modal-close" id="btnInboxClose" aria-label="Close">✕</button>
+    <h3>Pension Data Submissions</h3>
+    <p class="sub">Submissions sent by staff through the Quick Share form (stored in Google Sheet via Apps Script).</p>
+    <div class="inbox-tools">
+      <button class="btn btn-ghost" style="color:var(--navy);border-color:var(--line);" id="btnInboxRefresh">↻ Refresh</button>
+      <label style="margin:0;display:flex;gap:5px;align-items:center;font-weight:600;"><input type="checkbox" id="inboxShowDone"> Show already imported</label>
+      <button class="btn btn-ghost" style="color:var(--navy);border-color:var(--line);margin-left:auto;" id="btnInboxSettings">⚙ Settings</button>
+    </div>
+    <div id="inboxSettings" style="display:none;margin-bottom:10px;">
+      <label>Apps Script Web App URL (ends with /exec)</label>
+      <input type="text" id="inboxUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <label>Admin Key (same as ADMIN_KEY in Script Properties)</label>
+      <input type="text" id="inboxKey" placeholder="your secret admin key" autocomplete="off">
+      <div style="margin-top:8px;"><button class="btn btn-primary" id="btnInboxSaveSettings">Save Settings</button></div>
+    </div>
+    <div class="inbox-list" id="inboxList"><div style="padding:14px;color:var(--muted);">Click Refresh to load submissions.</div></div>
+    <div class="modal-err" id="inboxErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="color:var(--navy);border-color:var(--line);" id="btnInboxSelAll">Select all new</button>
+      <button class="btn btn-primary" id="btnInboxImport">Import Selected</button>
+    </div>
+  </div>
 </div>
 
 <!-- LOGIN MODAL -->
@@ -2357,6 +2398,122 @@ function flashStatus(msg, kind){
   el.innerHTML = `<div class="status ${kind==='ok'?'ok':'err'}">${escapeHtml(msg)}</div>`;
   setTimeout(()=>{ el.innerHTML=""; }, 3500);
 }
+
+/* =========================================================================
+   COLLECTION INBOX — Google Apps Script (replaces the JSON file hand-off)
+   Staff form  --POST-->  Apps Script  -->  Google Sheet  <--GET--  this page
+   ========================================================================= */
+const INBOX_LS_URL = "pension_inbox_url";
+const INBOX_LS_KEY = "pension_inbox_key";
+// Optional: hard-code your URL here so it works on every device without Settings.
+const INBOX_DEFAULT_URL = "https://script.google.com/macros/s/AKfycbyvcaz2-XtfF3lmuAM7jW23_41ammx2CXchN0Q4e8B4bahj-loepPuGkyC4eg68MdZcFw/exec";
+let inboxItems = [];
+
+function inboxUrl(){ return (localStorage.getItem(INBOX_LS_URL) || INBOX_DEFAULT_URL || "").trim(); }
+function inboxKey(){ return (localStorage.getItem(INBOX_LS_KEY) || "").trim(); }
+function inboxErr(m){ $("#inboxErr").textContent = m || ""; }
+
+async function inboxCall(params, body){
+  const url = inboxUrl(), key = inboxKey();
+  if(!url || !key) throw new Error("Set the Web App URL and Admin Key in Settings first.");
+  let res;
+  if(body){
+    res = await fetch(url, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify(Object.assign({key}, body))});
+  } else {
+    const q = new URLSearchParams(Object.assign({key}, params)).toString();
+    res = await fetch(url + (url.includes("?")?"&":"?") + q);
+  }
+  const j = await res.json();
+  if(!j.ok) throw new Error(j.error || "Server error");
+  return j;
+}
+
+function isDuplicateOfSaved(p){
+  const code = String(p.employeeCode||"").trim().toUpperCase();
+  const name = String(p.staffName||"").trim().toUpperCase();
+  return allRecords.some(r =>
+    (code && String(r.employeeCode||"").trim().toUpperCase()===code) ||
+    (name && String(r.staffName||"").trim().toUpperCase()===name && String(r.dob||"")===String(p.dob||"")));
+}
+
+function renderInbox(){
+  const showDone = $("#inboxShowDone").checked;
+  const rows = inboxItems.filter(x => showDone || x.status !== "IMPORTED");
+  if(!rows.length){ $("#inboxList").innerHTML = `<div style="padding:14px;color:var(--muted);">No ${showDone?"":"new "}submissions.</div>`; return; }
+  $("#inboxList").innerHTML = rows.map(x=>{
+    const done = x.status==="IMPORTED";
+    const dup = !done && isDuplicateOfSaved(x.payload||{});
+    const when = x.timestamp ? new Date(x.timestamp).toLocaleString("en-IN") : "";
+    return `<label class="inbox-row"><input type="checkbox" class="inbox-chk" value="${escapeHtml(x.submissionId)}" ${done?"disabled":(dup?"":"checked")}>
+      <span><span class="nm">${escapeHtml(proper((x.payload||{}).staffName||"(no name)"))}</span>
+      ${done?'<span class="tag done">imported</span>':(dup?'<span class="tag dup">already in portal</span>':'<span class="tag">new</span>')}<br>
+      <span class="meta">${escapeHtml((x.payload||{}).designation||"")} · Code ${escapeHtml((x.payload||{}).employeeCode||"-")} · ${escapeHtml(when)}</span></span></label>`;
+  }).join("");
+}
+
+async function loadInbox(){
+  inboxErr(""); $("#inboxList").innerHTML = `<div style="padding:14px;color:var(--muted);">Loading…</div>`;
+  try{
+    const j = await inboxCall({action:"list"});
+    inboxItems = j.items || [];
+    renderInbox();
+  }catch(e){
+    $("#inboxList").innerHTML = "";
+    inboxErr("Could not load: " + (e.message||e));
+  }
+}
+
+$("#btnFetchInbox").addEventListener("click", ()=>{
+  if(!guardEdit()) return;
+  $("#inboxUrl").value = inboxUrl(); $("#inboxKey").value = inboxKey();
+  $("#inboxModal").hidden = false;
+  if(inboxUrl() && inboxKey()) loadInbox(); else $("#inboxSettings").style.display = "block";
+});
+$("#btnInboxClose").addEventListener("click", ()=>{ $("#inboxModal").hidden = true; });
+$("#inboxModal").addEventListener("click", e=>{ if(e.target.id==="inboxModal") $("#inboxModal").hidden = true; });
+$("#btnInboxRefresh").addEventListener("click", loadInbox);
+$("#inboxShowDone").addEventListener("change", renderInbox);
+$("#btnInboxSettings").addEventListener("click", ()=>{
+  const d = $("#inboxSettings"); d.style.display = d.style.display==="none" ? "block" : "none";
+});
+$("#btnInboxSaveSettings").addEventListener("click", ()=>{
+  localStorage.setItem(INBOX_LS_URL, $("#inboxUrl").value.trim());
+  localStorage.setItem(INBOX_LS_KEY, $("#inboxKey").value.trim());
+  $("#inboxSettings").style.display = "none"; loadInbox();
+});
+$("#btnInboxSelAll").addEventListener("click", ()=>{
+  document.querySelectorAll(".inbox-chk:not(:disabled)").forEach(c=>c.checked = true);
+});
+
+$("#btnInboxImport").addEventListener("click", async ()=>{
+  if(!guardEdit()) return;
+  const picked = [...document.querySelectorAll(".inbox-chk:checked")].map(c=>c.value);
+  if(!picked.length){ inboxErr("Select at least one submission."); return; }
+  inboxErr("");
+  try{
+    const ids = await loadIndex();
+    const done = [];
+    for(const sid of picked){
+      const it = inboxItems.find(x=>x.submissionId===sid);
+      if(!it || !it.payload) continue;
+      const rec = Object.assign(defaultRecord(), it.payload);
+      rec.id = newId();
+      rec.savedAt = new Date().toISOString();
+      delete rec.__hraSet;
+      await saveRecord(rec);
+      ids.push(rec.id);
+      done.push(sid);
+    }
+    await saveIndex(ids);
+    if(done.length) await inboxCall({}, {action:"markImported", ids:done});
+    await refreshRecordList();
+    flashStatus(`Imported ${done.length} submission(s) from the collection sheet.`, "ok");
+    await loadInbox();
+  }catch(e){
+    inboxErr("Import failed: " + (e.message||e));
+  }
+});
 
 (async function init(){
   await refreshRecordList();
