@@ -491,7 +491,9 @@ const SECTIONS = [
     {id:"treasury", label:"Treasury", type:"text"},
     {id:"hoiName", label:"Name of Present HOI", type:"text"},
     {id:"hoiStatus", label:"Present HOI Status", type:"select", options:HOI_STATUSES},
-    {id:"adminStatus", label:"Administrative Status (M.C. post)", type:"select", options:ADMIN_STATUSES}
+    {id:"adminStatus", label:"Administrative Status (M.C. post)", type:"select", options:ADMIN_STATUSES},
+    {id:"adminName", label:"Name of Administrator / President [M.C.] (needed only if the pensioner is the HOI)", type:"text"},
+    {id:"adminMobile", label:"Administrator Mobile No. (needed only if the pensioner is the HOI)", type:"text"}
   ]
 },
 {
@@ -852,6 +854,22 @@ function hoiLine(t){
 function isApplicantHmOrTic(t){
   const desig = upper(t.designation || "");
   return ["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"].includes(desig.trim());
+}
+
+/* Who signs the HOI-side declarations: the HOI normally; the Administrator / President [M.C.] when the pensioner is the HOI himself/herself */
+function declarant(t){
+  if(isApplicantHmOrTic(t)){
+    return {isAdmin:true,  name:t.adminName||"", status:t.adminStatus||"Administrator", mobile:t.adminMobile||""};
+  }
+  return {isAdmin:false, name:t.hoiName||"", status:t.hoiStatus||"", mobile:t.hoiMobile||""};
+}
+function declTitle(t){
+  const d = declarant(t);
+  return d.isAdmin ? `Declaration by the ${escapeHtml(d.status)}` : "Declaration by the Head of the Institution";
+}
+function declByLabel(t){
+  const d = declarant(t);
+  return d.isAdmin ? escapeHtml(d.status) : "HOI";
 }
 
 function employeeRecipient(t){
@@ -1511,8 +1529,8 @@ function docFLP(t,c){
       <li>Particulars of Spouse such as document regarding proof of DOB, Marriage, etc.</li>
       <li>Documents regarding Refund / Adjustment of Overpayment of salary, if any.</li>
       <li>System-Generated Pay Slip of the incumbent for the specific month in which the pension file is being submitted to your office.</li>
-      <li>Declaration by the HOI regarding pendency of any case against the teacher / litigation against the post / any matter related to ${hisHer(g)} claim at any Court of Law, along with the declaration submitted by the employee${t.declDate?` dated ${fmtDate(t.declDate,"dd-mm-yyyy")}`:``}.</li>
-      <li>Declaration by the HOI regarding any outstanding personal loan of the incumbent to any Bank or Teachers' Credit Co-operative Society, along with the declaration submitted by the employee${t.declDate?` dated ${fmtDate(t.declDate,"dd-mm-yyyy")}`:``}.</li>
+      <li>Declaration by the ${declByLabel(t)} regarding pendency of any case against the teacher / litigation against the post / any matter related to ${hisHer(g)} claim at any Court of Law, along with the declaration submitted by the employee${t.declDate?` dated ${fmtDate(t.declDate,"dd-mm-yyyy")}`:``}.</li>
+      <li>Declaration by the ${declByLabel(t)} regarding any outstanding personal loan of the incumbent to any Bank or Teachers' Credit Co-operative Society, along with the declaration submitted by the employee${t.declDate?` dated ${fmtDate(t.declDate,"dd-mm-yyyy")}`:``}.</li>
     </ol>
   `);
 }
@@ -1770,10 +1788,16 @@ function declIntro(t,c,topic){
   const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
   const who = `${MrMrs(g)} ${blank(proper(t.staffName))}; ${retired?"Ex-":""}${blank(proper(t.designation))}`;
   const when = retired ? `who retired from ${hisHer(g)} service due to superannuation on ${dor} [a.n.]` : `who is due to retire from ${hisHer(g)} service on superannuation on ${dor} [a.n.]`;
-  return `<p>I, ${blank(proper(t.hoiName))}, ${blank(proper(t.hoiStatus))} (Head of the Institution) of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge, as per the records of this school and as per the declaration submitted by ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} dated ${t.declDate ? `<strong>${fmtDate(t.declDate,"dd-mm-yyyy")}</strong>` : "______________"} -</p>`;
+  const d=declarant(t);
+  const me = d.isAdmin ? `${blank(proper(d.name))}, ${blank(d.status)}` : `${blank(proper(d.name))}, ${blank(proper(d.status))} (Head of the Institution)`;
+  return `<p>I, ${me} of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge, as per the records of this school and as per the declaration submitted by ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} dated ${t.declDate ? `<strong>${fmtDate(t.declDate,"dd-mm-yyyy")}</strong>` : "______________"} -</p>`;
 }
 function declFooter(t){
   const today = fmtD(new Date(),"dd-mm-yyyy");
+  const d = declarant(t);
+  const sigLines = (d.name ? `<br>${escapeHtml(proper(d.name))}` : (d.isAdmin ? "<br>______________" : ""))
+    + (d.status ? `<br>${d.isAdmin ? escapeHtml(d.status) : escapeHtml(proper(d.status))}` : "")
+    + (d.mobile ? `<br>Mob: ${escapeHtml(d.mobile)}` : "");
   return `
     <p>This declaration is being submitted as per the instruction of the District Inspector of Schools (S.E.), Bankura for the purpose of acceptance of the pension file. I am aware that any false declaration will make me liable for action as per rules.</p>
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:16mm;">
@@ -1782,7 +1806,7 @@ function declFooter(t){
         <p class="small" style="margin:0;">Place: ______________</p>
       </div>
       <div class="sig-box">
-        <div class="sig-line">Signature of the HOI${hoiLine(t)}<br>Office Seal</div>
+        <div class="sig-line">Signature of the ${d.isAdmin ? escapeHtml(d.status) : "HOI"}${sigLines}<br>Office Seal</div>
       </div>
     </div>`;
 }
@@ -1794,7 +1818,7 @@ function docDECLCASE(t,c){
   const unset = [t.declCasePending,t.declPostLitigation,t.declClaimMatter].some(v=>!v);
   return pageWrap(`
     ${letterhead(t)}
-    <h2 class="doc-title">Declaration by the Head of the Institution</h2>
+    <h2 class="doc-title">${declTitle(t)}</h2>
     <h3 class="doc-sub">Regarding pendency of Court Case / Litigation</h3>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
     ${declIntro(t,c)}
@@ -1815,7 +1839,7 @@ function docDECLLOAN(t,c){
   const unset = [t.declBankLoan,t.declSocietyLoan].some(v=>!v);
   return pageWrap(`
     ${letterhead(t)}
-    <h2 class="doc-title">Declaration by the Head of the Institution</h2>
+    <h2 class="doc-title">${declTitle(t)}</h2>
     <h3 class="doc-sub">Regarding Outstanding Personal Loan (Bank / Teachers' Credit Co-operative Society)</h3>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
     ${declIntro(t,c)}
@@ -2172,6 +2196,7 @@ function renderField(f){
   return `<div class="field"><label>${f.label}</label>${input}${hint}</div>`;
 }
 
+const ADMIN_FIELDS = ["adminName","adminMobile"];
 const CHARGE_FIELDS = ["chargeHandOverCause","chargeHandOverToName","chargeHandOverToPost","chargeHandOverDate","ticChargeFrom"];
 const SPOUSE_SERVICE_FIELDS = ["spouseOffice","spouseDept","spouseDoj","spouseDesignation"];
 const SPOUSE_PERSONAL_FIELDS = ["spouseName","spouseRelation","spouseDob","spouseBankName","spouseBranchName","spouseAccountNo"];
@@ -2181,7 +2206,7 @@ function applyFieldRules(){
   const off = new Set();
   if(!["declCasePending","declPostLitigation","declClaimMatter"].some(k=>current[k]==="YES")) off.add("declCaseDetails");
   if(!["declBankLoan","declSocietyLoan"].some(k=>current[k]==="YES")) off.add("declLoanDetails");
-  if(!isHoi) CHARGE_FIELDS.forEach(f=>off.add(f));
+  if(!isHoi) CHARGE_FIELDS.concat(ADMIN_FIELDS).forEach(f=>off.add(f));
   if(st !== "IN SERVICE") SPOUSE_SERVICE_FIELDS.forEach(f=>off.add(f));
   if(["UN MARRIED","WIDOW","WIDOWER","DIVORCED"].includes(st)) SPOUSE_PERSONAL_FIELDS.forEach(f=>off.add(f));
   $$("[data-field]").forEach(el=>{
@@ -2356,7 +2381,7 @@ const EXCEL_FIELD_MAP={
   }));
   Object.assign(EXCEL_FIELD_MAP,{
     "COMMUTATION PENSION [YES / NO]":"commutationOpted","COMMUTATION OPTED":"commutationOpted",
-    "HRA TYPE":"hraMode","DATE OF DECLARATION":"declDate","DATE OF EMPLOYEE DECLARATION":"declDate","EMPLOYEE DECLARATION DATE":"declDate","DECLARATION DATE":"declDate","PF GROSS":"pfGross","PPO MEMO NO & DATE":"ppoMemo",
+    "HRA TYPE":"hraMode","DATE OF DECLARATION":"declDate","NAME OF ADMINISTRATOR":"adminName","ADMINISTRATOR NAME":"adminName","ADMINISTRATOR MOBILE NO":"adminMobile","ADMIN MOBILE NO":"adminMobile","DATE OF EMPLOYEE DECLARATION":"declDate","EMPLOYEE DECLARATION DATE":"declDate","DECLARATION DATE":"declDate","PF GROSS":"pfGross","PPO MEMO NO & DATE":"ppoMemo",
     "POST HELD AT PREVIOUS SCHOOL - 1":"prevSchoolPost1","POST HELD AT PREVIOUS SCHOOL - 2":"prevSchoolPost2",
     "PREVIOUS SCHOOL (S) POSTS-2":"prevSchoolPost2","PREV SCHOOL POST-2":"prevSchoolPost2"
   });
