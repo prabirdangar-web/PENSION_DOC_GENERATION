@@ -582,6 +582,7 @@ const SECTIONS = [
 {
   title:"HOI Declarations (D.I. Instruction) — Court Case / Litigation / Loan",
   fields:[
+    {id:"declDate", label:"Date of Employee's Declaration (appears in HOI &amp; Employee declarations)", type:"date"},
     {id:"declCasePending", label:"Any case pending against the teacher at any Court of Law? [Yes / No]", type:"select", options:["YES","NO"]},
     {id:"declPostLitigation", label:"Any litigation pending against the post he/she is working in? [Yes / No]", type:"select", options:["YES","NO"]},
     {id:"declClaimMatter", label:"Any matter related to his/her claim pending at any Court of Law? [Yes / No]", type:"select", options:["YES","NO"]},
@@ -1510,8 +1511,8 @@ function docFLP(t,c){
       <li>Particulars of Spouse such as document regarding proof of DOB, Marriage, etc.</li>
       <li>Documents regarding Refund / Adjustment of Overpayment of salary, if any.</li>
       <li>System-Generated Pay Slip of the incumbent for the specific month in which the pension file is being submitted to your office.</li>
-      <li>Declaration by the HOI regarding pendency of any case against the teacher / litigation against the post / any matter related to ${hisHer(g)} claim at any Court of Law, along with the declaration submitted by the employee.</li>
-      <li>Declaration by the HOI regarding any outstanding personal loan of the incumbent to any Bank or Teachers' Credit Co-operative Society, along with the declaration submitted by the employee.</li>
+      <li>Declaration by the HOI regarding pendency of any case against the teacher / litigation against the post / any matter related to ${hisHer(g)} claim at any Court of Law, along with the declaration submitted by the employee${t.declDate?` dated ${fmtDate(t.declDate,"dd-mm-yyyy")}`:``}.</li>
+      <li>Declaration by the HOI regarding any outstanding personal loan of the incumbent to any Bank or Teachers' Credit Co-operative Society, along with the declaration submitted by the employee${t.declDate?` dated ${fmtDate(t.declDate,"dd-mm-yyyy")}`:``}.</li>
     </ol>
   `);
 }
@@ -1769,7 +1770,7 @@ function declIntro(t,c,topic){
   const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
   const who = `${MrMrs(g)} ${blank(proper(t.staffName))}; ${retired?"Ex-":""}${blank(proper(t.designation))}`;
   const when = retired ? `who retired from ${hisHer(g)} service due to superannuation on ${dor} [a.n.]` : `who is due to retire from ${hisHer(g)} service on superannuation on ${dor} [a.n.]`;
-  return `<p>I, ${blank(proper(t.hoiName))}, ${blank(proper(t.hoiStatus))} (Head of the Institution) of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge, as per the records of this school and as per the declaration submitted by ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} dated ______________ -</p>`;
+  return `<p>I, ${blank(proper(t.hoiName))}, ${blank(proper(t.hoiStatus))} (Head of the Institution) of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge, as per the records of this school and as per the declaration submitted by ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} dated ${t.declDate ? `<strong>${fmtDate(t.declDate,"dd-mm-yyyy")}</strong>` : "______________"} -</p>`;
 }
 function declFooter(t){
   const today = fmtD(new Date(),"dd-mm-yyyy");
@@ -1840,7 +1841,7 @@ function empIntro(t,c){
   return `<p>I, ${MrMrs(t.gender)} ${blank(proper(t.staffName))}; ${retired?"Ex-":""}${blank(proper(t.designation))} of ${blank(proper(t.schoolName))}, ${retired?`who retired from my service due to superannuation on ${dor} [a.n.]`:`who am due to retire from my service on superannuation on ${dor} [a.n.]`}, do hereby declare, in connection with the submission of my pension file, that -</p>`;
 }
 function empFooter(t){
-  const today = fmtD(new Date(),"dd-mm-yyyy");
+  const today = t.declDate ? fmtDate(t.declDate,"dd-mm-yyyy") : fmtD(new Date(),"dd-mm-yyyy");
   return `
     <p>This declaration is being submitted to the Head of the Institution for enclosing with my pension file, as per the instruction of the District Inspector of Schools (S.E.), Bankura. I am aware that any false declaration will make me liable for action as per rules.</p>
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:16mm;">
@@ -2225,6 +2226,7 @@ function renderSummary(){
   const c = compute(current);
   const cards = [
     ["Date of Retirement", c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"—"],
+    ["Date of Employee's Declaration", current.declDate?fmtDate(current.declDate,"dd-mm-yyyy"):"—"],
     ["Total Length of Service", c.totalLengthOfService || "—"],
     ["Qualifying Service (years, 3-month quarters = 0.25)", c.qualYearsStr || 0],
     ["Reckonable Emoluments (Gratuity)", "Rs. "+ (inr(c.reckonableGratuity)||0)],
@@ -2354,12 +2356,12 @@ const EXCEL_FIELD_MAP={
   }));
   Object.assign(EXCEL_FIELD_MAP,{
     "COMMUTATION PENSION [YES / NO]":"commutationOpted","COMMUTATION OPTED":"commutationOpted",
-    "HRA TYPE":"hraMode","PF GROSS":"pfGross","PPO MEMO NO & DATE":"ppoMemo",
+    "HRA TYPE":"hraMode","DATE OF DECLARATION":"declDate","DATE OF EMPLOYEE DECLARATION":"declDate","EMPLOYEE DECLARATION DATE":"declDate","DECLARATION DATE":"declDate","PF GROSS":"pfGross","PPO MEMO NO & DATE":"ppoMemo",
     "POST HELD AT PREVIOUS SCHOOL - 1":"prevSchoolPost1","POST HELD AT PREVIOUS SCHOOL - 2":"prevSchoolPost2",
     "PREVIOUS SCHOOL (S) POSTS-2":"prevSchoolPost2","PREV SCHOOL POST-2":"prevSchoolPost2"
   });
 })();
-const EXCEL_DATE_FIELDS=new Set(["schoolRecognisedDate","dob","dojFirst","dojPrevSchool2","dojThisSchool","spouseDoj","spouseDob","child1Dob","child2Dob","child3Dob","lastIncrementDate","existingIncrementDate","chargeHandOverDate","ticChargeFrom"]);
+const EXCEL_DATE_FIELDS=new Set(["schoolRecognisedDate","dob","dojFirst","dojPrevSchool2","dojThisSchool","spouseDoj","spouseDob","child1Dob","child2Dob","child3Dob","lastIncrementDate","existingIncrementDate","chargeHandOverDate","ticChargeFrom","declDate"]);
 function normalizeExcelLabel(v){
   return String(v??"").replace(/\u00a0/g," ").replace(/\r?\n/g," ").replace(/\s+/g," ").trim().toUpperCase()
     .replace(/[：:]+$/,"").replace(/\s*[：:]\s*/g,":");
