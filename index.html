@@ -459,6 +459,7 @@
 /* =========================================================================
    FIELD SCHEMA
    ========================================================================= */
+const HOI_STATUSES = ["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"];
 const DESIGNATIONS = ["ASSISTANT TEACHER","CLERK","GR-D STAFF","HEADMASTER","HEADMISTRESS","AHM","LIBRARIAN","TEACHER-IN-CHARGE"];
 const GRADE_PAYS = [
   {gp:1700, level:"LEVEL-1-PB-1:4900-16200-GP-RS-1700"},
@@ -488,7 +489,8 @@ const SECTIONS = [
     {id:"currentUserId", label:"Current User ID (School, e-Pension)", type:"text"},
     {id:"diseCode", label:"DISE / UDISE Code of School", type:"text"},
     {id:"treasury", label:"Treasury", type:"text"},
-    {id:"hoiStatus", label:"Present HOI Status", type:"select", options:DESIGNATIONS},
+    {id:"hoiName", label:"Name of Present HOI", type:"text"},
+    {id:"hoiStatus", label:"Present HOI Status", type:"select", options:HOI_STATUSES},
     {id:"adminStatus", label:"Administrative Status (M.C. post)", type:"select", options:ADMIN_STATUSES}
   ]
 },
@@ -839,6 +841,13 @@ function hoiSignatory(t){
   return "HOI";
 }
 
+// HOI name + status lines for signature blocks (empty if name not entered)
+function hoiLine(t){
+  const n = String(t.hoiName||"").trim();
+  const st = String(t.hoiStatus||"").trim();
+  if(!n && !st) return "";
+  return (n ? "<br>"+escapeHtml(proper(n)) : "") + (st ? "<br>"+escapeHtml(proper(st)) : "");
+}
 function isApplicantHmOrTic(t){
   const desig = upper(t.designation || "");
   return ["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"].includes(desig.trim());
@@ -999,7 +1008,7 @@ function docSB(t,c){
       <li>The incumbent enjoyed ${blank(t.medicalLeave)} days Medical Leave with full average pay, ${blank(t.halfPayLeave)} days Half Pay Leave, ${blank(t.extraOrdinaryLeave)} days Extra Ordinary Leave and ${blank(t.specialLeave)} days Special Leave, and no other leave was enjoyed by ${himHer(g)} other than mentioned above during the tenure i.e. from ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date of ${hisHer(g)} service, and granted by M.C. / Administrator / competent authority; other leave if any has also been approved by the competent authority.</li>
       <li>The service rendered by ${himHer(g)} has been satisfactory and ${heshe(g)} was present on both the closing and reopening date of each long vacation throughout ${hisHer(g)} period of service since ${blank(fmtDate(t.dojFirst,"dd-mm-yyyy"))} to till date without any break of service.</li>
     </ol>
-    <div class="sig-block-right"><div class="sig-box"><div class="sig-line">Signature of the HOI / Office Seal</div></div></div>
+    <div class="sig-block-right"><div class="sig-box"><div class="sig-line">Signature of the HOI / Office Seal${hoiLine(t)}</div></div></div>
   `);
 }
 
@@ -1152,7 +1161,7 @@ function docE(t,c){
           <p style="margin-bottom:4px;">Witness: Signature, Name &amp; Address:</p>
           <div style="border-bottom:1px solid #333; height:8mm; width:75mm; margin-bottom:8px;">1.</div>
           <div style="border-bottom:1px solid #333; height:8mm; width:75mm; margin-bottom:20px;">2.</div>
-          <p style="font-weight:bold; margin-top:10px;">Signature of the HOI / Pension Disbursing Authority</p>
+          <p style="font-weight:bold; margin-top:10px;">Signature of the HOI / Pension Disbursing Authority${hoiLine(t)}</p>
         </div>
         
         <div style="text-align:right; width:45%; display:flex; flex-direction:column; align-items:flex-end;">
@@ -1173,7 +1182,7 @@ function docE(t,c){
           </div>
           <div style="text-align:center; width:70mm;">
             <div style="border-top:1px solid #111; padding-top:4px; font-weight:bold; font-size:10pt;">
-              Signature of the HOI / Pension Disbursing Authority<br>
+              Signature of the HOI / Pension Disbursing Authority${hoiLine(t)}<br>
               Full Address: ___________________________
             </div>
           </div>
@@ -1276,7 +1285,7 @@ function docD(t,c){
             (Signature of Employee)
           </div>
           <div style="border-top:1px solid #111; width:65mm; text-align:center; padding-top:4px; font-weight:bold;">
-            Signature of the HOI (Office Seal)
+            Signature of the HOI (Office Seal)${hoiLine(t)}
           </div>
         </div>
       </div>
@@ -1327,7 +1336,7 @@ function docHRAC(t,c){
     <p>${docSBEmploymentCertText(t,c)}</p>
     <div class="sig-block-right" style="margin-top:16mm;">
       <div class="sig-box">
-        <div class="sig-line">Signature of the HOI / Office Seal</div>
+        <div class="sig-line">Signature of the HOI / Office Seal${hoiLine(t)}</div>
       </div>
     </div>
   `);
@@ -1391,7 +1400,7 @@ function docNOLIA(t,c){
       <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:25px;">
         <div>Date:- _____________________</div>
         <div class="sig-box">
-          <div class="sig-line">Signature of the HOI<br>Office Seal</div>
+          <div class="sig-line">Signature of the HOI${hoiLine(t)}<br>Office Seal</div>
         </div>
       </div>
     </div>
@@ -1455,7 +1464,7 @@ function docPAYC(t,c){
       <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:35px;">
         <div>Date: _____________________</div>
         <div class="sig-box">
-          <div class="sig-line">Signature of the HOI<br>Office Seal</div>
+          <div class="sig-line">Signature of the HOI${hoiLine(t)}<br>Office Seal</div>
         </div>
       </div>
     </div>
@@ -1480,7 +1489,7 @@ function docFLP(t,c){
       </div>
       <div class="sig-box">
         <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
-        <div class="sig-line">Signature of the HOI</div>
+        <div class="sig-line">Signature of the HOI${hoiLine(t)}</div>
       </div>
     </div>
     <p style="margin-top:8mm;"><strong>Enclosures [In Duplicate]:</strong></p>
@@ -1528,7 +1537,7 @@ function docFLCHO(t,c){
       </div>
       <div class="sig-box">
         <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
-        <div class="sig-line">Signature of the HOI</div>
+        <div class="sig-line">Signature of the HOI${hoiLine(t)}</div>
       </div>
     </div>
   `);
@@ -1561,7 +1570,7 @@ function docAPPNOLIA(t,c){
     <ol class="items small"><li>Photo Copy of PPO.</li></ol>
     <div class="sig-block-right" style="margin-top:10mm;">
       <div class="sig-box">
-        <div class="sig-line">Signature of the HOI</div>
+        <div class="sig-line">Signature of the HOI${hoiLine(t)}</div>
       </div>
     </div>
   `);
@@ -1593,7 +1602,7 @@ function docFLNOLIACPC(t,c){
     <ol class="items small"><li>Photo Copy of PPO.</li></ol>
     <div class="sig-block-right" style="margin-top:10mm;">
       <div class="sig-box">
-        <div class="sig-line">Signature of the HOI</div>
+        <div class="sig-line">Signature of the HOI${hoiLine(t)}</div>
       </div>
     </div>
   `);
@@ -1617,7 +1626,7 @@ function docFLNOLIA(t,c){
       </div>
       <div class="sig-box">
         <p style="margin:0 0 10mm 0; text-align:center;">Yours faithfully,</p>
-        <div class="sig-line">Signature of the HOI</div>
+        <div class="sig-line">Signature of the HOI${hoiLine(t)}</div>
       </div>
     </div>
     <p style="margin-top:8mm;"><strong>Enclosures:</strong></p>
@@ -1647,7 +1656,7 @@ function docNOLIACERT(t,c){
     </ol>
     <div class="sig-block-right" style="margin-top:16mm;">
       <div class="sig-box">
-        <div class="sig-line">Signature of the HOI / Office Seal</div>
+        <div class="sig-line">Signature of the HOI / Office Seal${hoiLine(t)}</div>
       </div>
     </div>
   `);
@@ -1723,7 +1732,7 @@ function docCHO(t,c){
     <p style="margin-top:10mm;text-align:center;letter-spacing:3px;">C O U N T E R S I G N E D</p>
     <div style="display:flex; justify-content:center; margin-top:6mm;">
       <div class="sig-box">
-        <div class="sig-line">Signature of the HOI<br>${blank(proper(t.schoolName))}</div>
+        <div class="sig-line">Signature of the HOI${hoiLine(t)}<br>${blank(proper(t.schoolName))}</div>
       </div>
     </div>
   `);
@@ -1740,7 +1749,7 @@ function docCPC(t,c){
     <p>${proper(t.staffName)}; Ex-${proper(t.designation)} [duly retired from ${hisHer(g)} service due to superannuation on ${c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):""} (a.n.)] has no liabilities in connection with the submission of Utilization Certificate on different grants sanctioned by SSM in favour of this school i.e. ${proper(t.schoolName)}, and for such grants after utilization no Utilization Certificate is pending for submission during ${hisHer(g)} service period, i.e. till ${c.dor?fmtDate(c.dorStr,"dd-mmmm-yyyy"):""}.</p>
     <div class="sig-block-right" style="margin-top:16mm;">
       <div class="sig-box">
-        <div class="sig-line">Signature of the HOI / Office Seal</div>
+        <div class="sig-line">Signature of the HOI / Office Seal${hoiLine(t)}</div>
       </div>
     </div>
   `);
@@ -1760,9 +1769,9 @@ function declIntro(t,c,topic){
   const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
   const who = `${MrMrs(g)} ${blank(proper(t.staffName))}; ${retired?"Ex-":""}${blank(proper(t.designation))}`;
   const when = retired ? `who retired from ${hisHer(g)} service due to superannuation on ${dor} [a.n.]` : `who is due to retire from ${hisHer(g)} service on superannuation on ${dor} [a.n.]`;
-  return `<p>I, ________________________________________, Head of the Institution of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge and as per the records of this school -</p>`;
+  return `<p>I, ${blank(proper(t.hoiName))}, ${blank(proper(t.hoiStatus))} (Head of the Institution) of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge and as per the records of this school -</p>`;
 }
-function declFooter(){
+function declFooter(t){
   const today = fmtD(new Date(),"dd-mm-yyyy");
   return `
     <p>This declaration is being submitted as per the instruction of the District Inspector of Schools (S.E.), Bankura for the purpose of acceptance of the pension file. I am aware that any false declaration will make me liable for action as per rules.</p>
@@ -1772,7 +1781,7 @@ function declFooter(){
         <p class="small" style="margin:0;">Place: ______________</p>
       </div>
       <div class="sig-box">
-        <div class="sig-line">Signature of the HOI<br>Name: ______________________<br>Office Seal</div>
+        <div class="sig-line">Signature of the HOI${hoiLine(t)}<br>Office Seal</div>
       </div>
     </div>`;
 }
@@ -1795,7 +1804,7 @@ function docDECLCASE(t,c){
     </ol>
     ${anyYes ? `<p>Details (Case No., Court, Present Status): ${t.declCaseDetails ? `<strong>${escapeHtml(t.declCaseDetails)}</strong>` : "______________________________________________________________"}</p>` : ``}
     ${unset ? `<p class="small">[Delete whichever is not applicable.]</p>` : ``}
-    ${declFooter()}
+    ${declFooter(t)}
   `);
 }
 
@@ -1820,7 +1829,7 @@ function docDECLLOAN(t,c){
       <tr><td>2.</td><td></td><td></td><td></td><td></td></tr>
     </table>` : ``}
     ${unset ? `<p class="small">[Delete whichever is not applicable.]</p>` : ``}
-    ${declFooter()}
+    ${declFooter(t)}
   `);
 }
 
@@ -2265,7 +2274,7 @@ const EXCEL_FIELD_MAP={
 "CURRENT USER ID SCHOOL":"currentUserId","DISE CODE OF SCHOOL":"diseCode","IF HM RETD NAME OF TIC/HM":"chargeHandOverToName",
 "CHARGE HAND OVER MCR":"chargeHandOverCause","CHARGE HAND OVER MC DATE":"chargeHandOverDate","TIC CHARGE FROM":"ticChargeFrom","CPC NAME":"cpcName",
 "CHARGE HAND OVER CAUSE":"chargeHandOverCause","CHARGE HAND OVER TO [POST]":"chargeHandOverToPost","CHARGE HAND OVER DATE EXECUTION":"chargeHandOverDate",
-"HOI STATUS":"hoiStatus","ADMINISTRATIVE STATUS":"adminStatus"
+"HOI NAME":"hoiName","NAME OF HOI":"hoiName","HOI STATUS":"hoiStatus","ADMINISTRATIVE STATUS":"adminStatus"
 };
 /* Also accept the exact field IDs and labels used by the Pension Data Collection form */
 (function(){
