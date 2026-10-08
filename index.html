@@ -578,6 +578,18 @@ const SECTIONS = [
   ]
 },
 {
+  title:"HOI Declarations (D.I. Instruction) — Court Case / Litigation / Loan",
+  fields:[
+    {id:"declCasePending", label:"Any case pending against the teacher at any Court of Law? [Yes / No]", type:"select", options:["YES","NO"]},
+    {id:"declPostLitigation", label:"Any litigation pending against the post he/she is working in? [Yes / No]", type:"select", options:["YES","NO"]},
+    {id:"declClaimMatter", label:"Any matter related to his/her claim pending at any Court of Law? [Yes / No]", type:"select", options:["YES","NO"]},
+    {id:"declCaseDetails", label:"Court case details (Case No., Court, Status) — if any Yes above", type:"textarea"},
+    {id:"declBankLoan", label:"Outstanding personal loan to any Bank? [Yes / No]", type:"select", options:["YES","NO"]},
+    {id:"declSocietyLoan", label:"Outstanding personal loan to Teachers' Credit Co-operative Society? [Yes / No]", type:"select", options:["YES","NO"]},
+    {id:"declLoanDetails", label:"Loan details (Bank / Society name, A/C No., Outstanding Rs.) — if any Yes above", type:"textarea"}
+  ]
+},
+{
   title:"Charge Hand-over / Administrative",
   fields:[
     {id:"chargeHandOverCause", label:"Reason for Charge Hand-over", type:"select", options:CHARGE_CAUSES},
@@ -599,6 +611,7 @@ function defaultRecord(){
   d.adminStatus = "President [M.C.]";
   d.hraMode = "PERCENT";
   d.commutationOpted = "YES";
+  d.declCasePending="NO"; d.declPostLitigation="NO"; d.declClaimMatter="NO"; d.declBankLoan="NO"; d.declSocietyLoan="NO";
   d.hraPercentValue = "12";
   d.hraFixedAmount = "3600";
   d.spouseRelation = "WIFE";
@@ -1733,63 +1746,81 @@ function docCPC(t,c){
   `);
 }
 
+/* --- HOI declarations (D.I. instruction): wording follows Yes/No chosen in Data tab and the date of generation vs. date of retirement --- */
+function declYN(v, yesTxt, noTxt){
+  // v = "YES" / "NO" from the Data tab. If not chosen, show both so the HOI can strike out by hand.
+  const u = String(v||"").toUpperCase();
+  if(u==="YES") return `<s style="color:#666;">${noTxt}</s> <strong>${yesTxt}</strong>`;
+  if(u==="NO")  return `<strong>${noTxt}</strong> <s style="color:#666;">${yesTxt}</s>`;
+  return `<strong>${yesTxt} / ${noTxt}</strong>`;
+}
+function declIntro(t,c,topic){
+  const g=t.gender;
+  const retired = !!(c.dor && new Date()>c.dor);
+  const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
+  const who = `${MrMrs(g)} ${blank(proper(t.staffName))}; ${retired?"Ex-":""}${blank(proper(t.designation))}`;
+  const when = retired ? `who retired from ${hisHer(g)} service due to superannuation on ${dor} [a.n.]` : `who is due to retire from ${hisHer(g)} service on superannuation on ${dor} [a.n.]`;
+  return `<p>I, ________________________________________, Head of the Institution of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge and as per the records of this school -</p>`;
+}
+function declFooter(){
+  const today = fmtD(new Date(),"dd-mm-yyyy");
+  return `
+    <p>This declaration is being submitted as per the instruction of the District Inspector of Schools (S.E.), Bankura for the purpose of acceptance of the pension file. I am aware that any false declaration will make me liable for action as per rules.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:16mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ${today}</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI<br>Name: ______________________<br>Office Seal</div>
+      </div>
+    </div>`;
+}
+
 function docDECLCASE(t,c){
   const g=t.gender;
-  const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
+  const retired = !!(c.dor && new Date()>c.dor);
+  const anyYes = [t.declCasePending,t.declPostLitigation,t.declClaimMatter].some(v=>String(v||"").toUpperCase()==="YES");
+  const unset = [t.declCasePending,t.declPostLitigation,t.declClaimMatter].some(v=>!v);
   return pageWrap(`
     ${letterhead(t)}
     <h2 class="doc-title">Declaration by the Head of the Institution</h2>
     <h3 class="doc-sub">Regarding pendency of Court Case / Litigation</h3>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
-    <p>I, ________________________________________, Head of the Institution of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} of this school (date of superannuation: ${dor}), that, to the best of my knowledge and as per the records of this school -</p>
+    ${declIntro(t,c)}
     <ol class="items">
-      <li>There <strong>is / is not</strong> any case pending against ${MrMrs(g)} ${blank(proper(t.staffName))} at any Court of Law.</li>
-      <li>There <strong>is / is not</strong> any litigation pending against the post of ${blank(proper(t.designation))} in which ${heshe(g)} is working.</li>
-      <li>There <strong>is / is not</strong> any matter related to ${hisHer(g)} claim pending at any Court of Law.</li>
+      <li>There ${declYN(t.declCasePending,"is","is not")} any case pending against ${MrMrs(g)} ${blank(proper(t.staffName))} at any Court of Law.</li>
+      <li>There ${declYN(t.declPostLitigation,"is","is not")} any litigation pending against the post of ${blank(proper(t.designation))} in which ${heshe(g)} ${retired?"worked":"is working"}.</li>
+      <li>There ${declYN(t.declClaimMatter,"is","is not")} any matter related to ${hisHer(g)} claim pending at any Court of Law.</li>
     </ol>
-    <p class="small">[Strike out whichever is not applicable. If the answer to any of the above is &lsquo;is&rsquo;, give details (Case No., Court, Present Status): ______________________________________________________________ ]</p>
-    <p>This declaration is being submitted as per the instruction of the District Inspector of Schools (S.E.), Bankura for the purpose of acceptance of the pension file. I am aware that any false declaration will make me liable for action as per rules.</p>
-    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:16mm;">
-      <div>
-        <p class="small" style="margin:0;">Date: ______________</p>
-        <p class="small" style="margin:0;">Place: ______________</p>
-      </div>
-      <div class="sig-box">
-        <div class="sig-line">Signature of the HOI<br>Name: ______________________<br>Office Seal</div>
-      </div>
-    </div>
+    ${anyYes ? `<p>Details (Case No., Court, Present Status): ${t.declCaseDetails ? `<strong>${escapeHtml(t.declCaseDetails)}</strong>` : "______________________________________________________________"}</p>` : ``}
+    ${unset ? `<p class="small">[Strike out whichever is not applicable.]</p>` : ``}
+    ${declFooter()}
   `);
 }
 
 function docDECLLOAN(t,c){
   const g=t.gender;
-  const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
+  const anyYes = [t.declBankLoan,t.declSocietyLoan].some(v=>String(v||"").toUpperCase()==="YES");
+  const unset = [t.declBankLoan,t.declSocietyLoan].some(v=>!v);
   return pageWrap(`
     ${letterhead(t)}
     <h2 class="doc-title">Declaration by the Head of the Institution</h2>
     <h3 class="doc-sub">Regarding Outstanding Personal Loan (Bank / Teachers' Credit Co-operative Society)</h3>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
-    <p>I, ________________________________________, Head of the Institution of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} of this school (date of superannuation: ${dor}), that, to the best of my knowledge and as per the records of this school -</p>
+    ${declIntro(t,c)}
     <ol class="items">
-      <li>${MrMrs(g)} ${blank(proper(t.staffName))} <strong>has / has no</strong> outstanding personal loan to any Bank.</li>
-      <li>${MrMrs(g)} ${blank(proper(t.staffName))} <strong>has / has no</strong> outstanding personal loan to any Teachers' Credit Co-operative Society.</li>
+      <li>${MrMrs(g)} ${blank(proper(t.staffName))} ${declYN(t.declBankLoan,"has","has no")} outstanding personal loan to any Bank.</li>
+      <li>${MrMrs(g)} ${blank(proper(t.staffName))} ${declYN(t.declSocietyLoan,"has","has no")} outstanding personal loan to any Teachers' Credit Co-operative Society.</li>
     </ol>
-    <p class="small">[Strike out whichever is not applicable. If the answer to any of the above is &lsquo;has&rsquo;, give details:]</p>
+    ${anyYes ? `<p>Details of loan:</p>
     <table>
       <tr><th>Sl</th><th>Name of Bank / Society</th><th>Loan A/C No.</th><th>Loan Amount (Rs.)</th><th>Outstanding as on date (Rs.)</th></tr>
-      <tr><td>1.</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>1.</td><td colspan="4">${t.declLoanDetails ? `<strong>${escapeHtml(t.declLoanDetails)}</strong>` : "&nbsp;"}</td></tr>
       <tr><td>2.</td><td></td><td></td><td></td><td></td></tr>
-    </table>
-    <p>This declaration is being submitted as per the instruction of the District Inspector of Schools (S.E.), Bankura for the purpose of acceptance of the pension file. I am aware that any false declaration will make me liable for action as per rules.</p>
-    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:16mm;">
-      <div>
-        <p class="small" style="margin:0;">Date: ______________</p>
-        <p class="small" style="margin:0;">Place: ______________</p>
-      </div>
-      <div class="sig-box">
-        <div class="sig-line">Signature of the HOI<br>Name: ______________________<br>Office Seal</div>
-      </div>
-    </div>
+    </table>` : ``}
+    ${unset ? `<p class="small">[Strike out whichever is not applicable.]</p>` : ``}
+    ${declFooter()}
   `);
 }
 
@@ -2071,6 +2102,8 @@ function applyFieldRules(){
   const isHoi = isApplicantHmOrTic(current);
   const st = current.spouseStatus;
   const off = new Set();
+  if(!["declCasePending","declPostLitigation","declClaimMatter"].some(k=>current[k]==="YES")) off.add("declCaseDetails");
+  if(!["declBankLoan","declSocietyLoan"].some(k=>current[k]==="YES")) off.add("declLoanDetails");
   if(!isHoi) CHARGE_FIELDS.forEach(f=>off.add(f));
   if(st !== "IN SERVICE") SPOUSE_SERVICE_FIELDS.forEach(f=>off.add(f));
   if(["UN MARRIED","WIDOW","WIDOWER","DIVORCED"].includes(st)) SPOUSE_PERSONAL_FIELDS.forEach(f=>off.add(f));
