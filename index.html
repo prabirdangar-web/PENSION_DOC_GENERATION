@@ -1510,8 +1510,8 @@ function docFLP(t,c){
       <li>Particulars of Spouse such as document regarding proof of DOB, Marriage, etc.</li>
       <li>Documents regarding Refund / Adjustment of Overpayment of salary, if any.</li>
       <li>System-Generated Pay Slip of the incumbent for the specific month in which the pension file is being submitted to your office.</li>
-      <li>Declaration by the HOI regarding pendency of any case against the teacher / litigation against the post / any matter related to ${hisHer(g)} claim at any Court of Law.</li>
-      <li>Declaration by the HOI regarding any outstanding personal loan of the incumbent to any Bank or Teachers' Credit Co-operative Society.</li>
+      <li>Declaration by the HOI regarding pendency of any case against the teacher / litigation against the post / any matter related to ${hisHer(g)} claim at any Court of Law, along with the declaration submitted by the employee.</li>
+      <li>Declaration by the HOI regarding any outstanding personal loan of the incumbent to any Bank or Teachers' Credit Co-operative Society, along with the declaration submitted by the employee.</li>
     </ol>
   `);
 }
@@ -1769,7 +1769,7 @@ function declIntro(t,c,topic){
   const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
   const who = `${MrMrs(g)} ${blank(proper(t.staffName))}; ${retired?"Ex-":""}${blank(proper(t.designation))}`;
   const when = retired ? `who retired from ${hisHer(g)} service due to superannuation on ${dor} [a.n.]` : `who is due to retire from ${hisHer(g)} service on superannuation on ${dor} [a.n.]`;
-  return `<p>I, ${blank(proper(t.hoiName))}, ${blank(proper(t.hoiStatus))} (Head of the Institution) of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge and as per the records of this school -</p>`;
+  return `<p>I, ${blank(proper(t.hoiName))}, ${blank(proper(t.hoiStatus))} (Head of the Institution) of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${who} of this school, ${when}, that, to the best of my knowledge, as per the records of this school and as per the declaration submitted by ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} dated ______________ -</p>`;
 }
 function declFooter(t){
   const today = fmtD(new Date(),"dd-mm-yyyy");
@@ -1833,13 +1833,78 @@ function docDECLLOAN(t,c){
   `);
 }
 
+/* --- Employee (incumbent) declarations: same Yes/No answers as the HOI declarations, in the first person --- */
+function empIntro(t,c){
+  const retired = !!(c.dor && new Date()>c.dor);
+  const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
+  return `<p>I, ${MrMrs(t.gender)} ${blank(proper(t.staffName))}; ${retired?"Ex-":""}${blank(proper(t.designation))} of ${blank(proper(t.schoolName))}, ${retired?`who retired from my service due to superannuation on ${dor} [a.n.]`:`who am due to retire from my service on superannuation on ${dor} [a.n.]`}, do hereby declare, in connection with the submission of my pension file, that -</p>`;
+}
+function empFooter(t){
+  const today = fmtD(new Date(),"dd-mm-yyyy");
+  return `
+    <p>This declaration is being submitted to the Head of the Institution for enclosing with my pension file, as per the instruction of the District Inspector of Schools (S.E.), Bankura. I am aware that any false declaration will make me liable for action as per rules.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:16mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ${today}</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line">Signature of the Employee<br>${blank(proper(t.staffName))}<br>${blank(proper(t.designation))}<br>Employee ID: ${blank(t.employeeCode)}</div>
+      </div>
+    </div>`;
+}
+function docEMPCASE(t,c){
+  const retired = !!(c.dor && new Date()>c.dor);
+  const anyYes = [t.declCasePending,t.declPostLitigation,t.declClaimMatter].some(v=>String(v||"").toUpperCase()==="YES");
+  const unset = [t.declCasePending,t.declPostLitigation,t.declClaimMatter].some(v=>!v);
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">Declaration by the Employee</h2>
+    <h3 class="doc-sub">Regarding pendency of Court Case / Litigation</h3>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
+    ${empIntro(t,c)}
+    <ol class="items">
+      <li>${declYN(t.declCasePending,"A case is pending","No case is pending")} against me at ${declYN(t.declCasePending,"a Court of Law","any Court of Law")}.</li>
+      <li>${declYN(t.declPostLitigation,"Litigation is pending","No litigation is pending")} against the post of ${blank(proper(t.designation))} in which I ${retired?"worked":"am working"}.</li>
+      <li>${declYN(t.declClaimMatter,"A matter related to","No matter related to")} my claim is pending at ${declYN(t.declClaimMatter,"a Court of Law","any Court of Law")}.</li>
+    </ol>
+    ${anyYes ? `<p>Details (Case No., Court, Present Status): ${t.declCaseDetails ? `<strong>${escapeHtml(t.declCaseDetails)}</strong>` : "______________________________________________________________"}</p>` : ``}
+    ${unset ? `<p class="small">[Delete whichever is not applicable.]</p>` : ``}
+    ${empFooter(t)}
+  `);
+}
+function docEMPLOAN(t,c){
+  const anyYes = [t.declBankLoan,t.declSocietyLoan].some(v=>String(v||"").toUpperCase()==="YES");
+  const unset = [t.declBankLoan,t.declSocietyLoan].some(v=>!v);
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">Declaration by the Employee</h2>
+    <h3 class="doc-sub">Regarding Outstanding Personal Loan (Bank / Teachers' Credit Co-operative Society)</h3>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
+    ${empIntro(t,c)}
+    <ol class="items">
+      <li>I ${declYN(t.declBankLoan,"have an outstanding personal loan to a Bank","have no outstanding personal loan to any Bank")}.</li>
+      <li>I ${declYN(t.declSocietyLoan,"have an outstanding personal loan to a Teachers' Credit Co-operative Society","have no outstanding personal loan to any Teachers' Credit Co-operative Society")}.</li>
+    </ol>
+    ${anyYes ? `<p>Details of loan:</p>
+    <table>
+      <tr><th>Sl</th><th>Name of Bank / Society</th><th>Loan A/C No.</th><th>Loan Amount (Rs.)</th><th>Outstanding as on date (Rs.)</th></tr>
+      <tr><td>1.</td><td colspan="4">${t.declLoanDetails ? `<strong>${escapeHtml(t.declLoanDetails)}</strong>` : "&nbsp;"}</td></tr>
+      <tr><td>2.</td><td></td><td></td><td></td><td></td></tr>
+    </table>` : ``}
+    ${unset ? `<p class="small">[Delete whichever is not applicable.]</p>` : ``}
+    ${empFooter(t)}
+  `);
+}
+
 const DOC_RENDERERS = {
   COVER: docCOVER, SB: docSB, AB: docAB, E: docE, D: docD,
   HRAD: docHRAD, HRAC: docHRAC, NOLIA: docNOLIA, PAYC: docPAYC,
   FLP: docFLP, FLCHO: docFLCHO, APPNOLIA: docAPPNOLIA,
   FLNOLIACPC: docFLNOLIACPC, FLNOLIA: docFLNOLIA, NOLIACERT: docNOLIACERT,
   RESC: docRESC, CHO: docCHO, CPC: docCPC,
-  DECLCASE: docDECLCASE, DECLLOAN: docDECLLOAN
+  DECLCASE: docDECLCASE, DECLLOAN: docDECLLOAN,
+  EMPCASE: docEMPCASE, EMPLOAN: docEMPLOAN
 };
 
 const DOC_LIST = [
@@ -1862,7 +1927,9 @@ const DOC_LIST = [
   { id:"CHO",         name:"Charge Hand/Take Over",     sub:"Charge hand over & take over note" },
   { id:"CPC",         name:"No Liability (UC/SSM)",     sub:"To Whom It May Concern — utilization certificate" },
   { id:"DECLCASE",    name:"HOI Declaration — Court Case", sub:"Pending case / litigation / claim (DI instruction)" },
-  { id:"DECLLOAN",    name:"HOI Declaration — Loan",    sub:"Outstanding Bank / Teachers' Credit Society loan" }
+  { id:"DECLLOAN",    name:"HOI Declaration — Loan",    sub:"Outstanding Bank / Teachers' Credit Society loan" },
+  { id:"EMPCASE",     name:"Employee Declaration — Court Case", sub:"Incumbent's own declaration (basis for HOI declaration)" },
+  { id:"EMPLOAN",     name:"Employee Declaration — Loan", sub:"Incumbent's own declaration (basis for HOI declaration)" }
 ];
 
 /* =========================================================================
@@ -2177,7 +2244,7 @@ function renderSummary(){
 }
 
 // Documents printed on the school's pre-printed letterhead paper: top 7.3 cm left blank
-const LETTERHEAD_DOCS = new Set(["SB","HRAC","NOLIACERT","RESC","CHO","CPC","FLP","FLCHO","FLNOLIACPC","FLNOLIA","DECLCASE","DECLLOAN"]);
+const LETTERHEAD_DOCS = new Set(["SB","HRAC","NOLIACERT","RESC","CHO","CPC","FLP","FLCHO","FLNOLIACPC","FLNOLIA","DECLCASE","DECLLOAN","EMPCASE","EMPLOAN"]);
 function visibleDocs(t){
   const hoi = isApplicantHmOrTic(t);
   const spIn = t.spouseStatus === "IN SERVICE";
