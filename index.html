@@ -860,21 +860,24 @@ function compute(t){
   c.serviceMD = doj && c.dor ? (1+dateDiffMD(doj, c.dor)) : 0;
   c.totalLengthOfService = doj && c.dor ? `${c.serviceY}Y-${c.serviceYM}M-${c.serviceMD}-D` : "";
 
-  const bonus = c.serviceYM>=9 ? 3 : c.serviceYM>=6 ? 2 : c.serviceYM>=3 ? 1 : 0;
-  c.qualHalfYears = Math.min((bonus + c.serviceY*2)/2, 33);
+  // Qualifying service in YEARS: completed years + 0.25 for every completed 3-month quarter
+  // (e.g. 26y 7m = 26.50 ; 26y 5m = 26.25 ; 26y 2m = 26.00 ; 26y 9m = 26.75). Max 33 years.
+  const qtrs = Math.floor(c.serviceYM/3);
+  c.qualYears = Math.min(c.serviceY + qtrs*0.25, 33);
+  c.qualYearsStr = (Math.round(c.qualYears*100)/100).toFixed(2).replace(/\.?0+$/,"");
 
   const lastBasic = Number(t.lastBasicPay)||0;
   c.lastBasicReckonable = lastBasic;
   const da = Number(t.daPercent)||0;
   c.daAmount = Math.round(lastBasic*da/100);
   c.reckonableGratuity = c.lastBasicReckonable + c.daAmount;
-  c.gratuityAmount = Math.min(c.reckonableGratuity*c.qualHalfYears/2, 1200000);
+  c.gratuityAmount = Math.min(c.reckonableGratuity*c.qualYears/2, 1200000);
   // Commutation % may arrive as 40 (collection form) or 0.4 (old Excel) -> always use a fraction here
   let cpRaw = Number(String(t.commutationPercent||"").replace("%","").trim())||0;
   c.commutationPct = cpRaw >= 1 ? cpRaw/100 : cpRaw;
   if(String(t.commutationOpted||"").toUpperCase()==="NO") c.commutationPct = 0;
-  c.reckonablePension = c.lastBasicReckonable * Math.min(c.qualHalfYears,20)/20;
-  c.pensionBasic = c.qualHalfYears<10 ? 0 : (c.qualHalfYears<20 ? Math.round((c.lastBasicReckonable/2)*(c.qualHalfYears/20)) : Math.round(c.lastBasicReckonable/2));
+  c.reckonablePension = c.lastBasicReckonable * Math.min(c.qualYears,20)/20;
+  c.pensionBasic = c.qualYears<10 ? 0 : (c.qualYears<20 ? Math.round((c.lastBasicReckonable/2)*(c.qualYears/20)) : Math.round(c.lastBasicReckonable/2));
   c.commutationAmount = Math.round(c.pensionBasic*c.commutationPct);
   c.cvpAmount = Math.round(c.commutationAmount*8.194*12);
   c.retirementTotalOneTime = c.gratuityAmount + c.cvpAmount;
@@ -2048,7 +2051,7 @@ function renderSummary(){
   const cards = [
     ["Date of Retirement", c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"—"],
     ["Total Length of Service", c.totalLengthOfService || "—"],
-    ["Qualifying Service (half-years)", c.qualHalfYears || 0],
+    ["Qualifying Service (years, 3-month quarters = 0.25)", c.qualYearsStr || 0],
     ["Reckonable Emoluments (Gratuity)", "Rs. "+ (inr(c.reckonableGratuity)||0)],
     ["Gratuity Amount", "Rs. "+(inr(c.gratuityAmount)||0)],
     ["Reckonable Emoluments (Pension)", "Rs. "+(inr(c.reckonablePension)||0)],
