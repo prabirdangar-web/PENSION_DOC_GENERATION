@@ -1487,6 +1487,9 @@ function docFLP(t,c){
       <li>No Liabilities Certificate (in format).</li>
       <li>Particulars of Spouse such as document regarding proof of DOB, Marriage, etc.</li>
       <li>Documents regarding Refund / Adjustment of Overpayment of salary, if any.</li>
+      <li>System-Generated Pay Slip of the incumbent for the specific month in which the pension file is being submitted to your office.</li>
+      <li>Declaration by the HOI regarding pendency of any case against the teacher / litigation against the post / any matter related to ${hisHer(g)} claim at any Court of Law.</li>
+      <li>Declaration by the HOI regarding any outstanding personal loan of the incumbent to any Bank or Teachers' Credit Co-operative Society.</li>
     </ol>
   `);
 }
@@ -1730,12 +1733,73 @@ function docCPC(t,c){
   `);
 }
 
+function docDECLCASE(t,c){
+  const g=t.gender;
+  const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">Declaration by the Head of the Institution</h2>
+    <h3 class="doc-sub">Regarding pendency of Court Case / Litigation</h3>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
+    <p>I, ________________________________________, Head of the Institution of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} of this school (date of superannuation: ${dor}), that, to the best of my knowledge and as per the records of this school -</p>
+    <ol class="items">
+      <li>There <strong>is / is not</strong> any case pending against ${MrMrs(g)} ${blank(proper(t.staffName))} at any Court of Law.</li>
+      <li>There <strong>is / is not</strong> any litigation pending against the post of ${blank(proper(t.designation))} in which ${heshe(g)} is working.</li>
+      <li>There <strong>is / is not</strong> any matter related to ${hisHer(g)} claim pending at any Court of Law.</li>
+    </ol>
+    <p class="small">[Strike out whichever is not applicable. If the answer to any of the above is &lsquo;is&rsquo;, give details (Case No., Court, Present Status): ______________________________________________________________ ]</p>
+    <p>This declaration is being submitted as per the instruction of the District Inspector of Schools (S.E.), Bankura for the purpose of acceptance of the pension file. I am aware that any false declaration will make me liable for action as per rules.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:16mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI<br>Name: ______________________<br>Office Seal</div>
+      </div>
+    </div>
+  `);
+}
+
+function docDECLLOAN(t,c){
+  const g=t.gender;
+  const dor = c.dor?fmtDate(c.dorStr,"dd-mm-yyyy"):"";
+  return pageWrap(`
+    ${letterhead(t)}
+    <h2 class="doc-title">Declaration by the Head of the Institution</h2>
+    <h3 class="doc-sub">Regarding Outstanding Personal Loan (Bank / Teachers' Credit Co-operative Society)</h3>
+    <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
+    <p>I, ________________________________________, Head of the Institution of ${blank(proper(t.schoolName))}, do hereby declare, in connection with the submission of the pension file of ${MrMrs(g)} ${blank(proper(t.staffName))}; ${blank(proper(t.designation))} of this school (date of superannuation: ${dor}), that, to the best of my knowledge and as per the records of this school -</p>
+    <ol class="items">
+      <li>${MrMrs(g)} ${blank(proper(t.staffName))} <strong>has / has no</strong> outstanding personal loan to any Bank.</li>
+      <li>${MrMrs(g)} ${blank(proper(t.staffName))} <strong>has / has no</strong> outstanding personal loan to any Teachers' Credit Co-operative Society.</li>
+    </ol>
+    <p class="small">[Strike out whichever is not applicable. If the answer to any of the above is &lsquo;has&rsquo;, give details:]</p>
+    <table>
+      <tr><th>Sl</th><th>Name of Bank / Society</th><th>Loan A/C No.</th><th>Loan Amount (Rs.)</th><th>Outstanding as on date (Rs.)</th></tr>
+      <tr><td>1.</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>2.</td><td></td><td></td><td></td><td></td></tr>
+    </table>
+    <p>This declaration is being submitted as per the instruction of the District Inspector of Schools (S.E.), Bankura for the purpose of acceptance of the pension file. I am aware that any false declaration will make me liable for action as per rules.</p>
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:16mm;">
+      <div>
+        <p class="small" style="margin:0;">Date: ______________</p>
+        <p class="small" style="margin:0;">Place: ______________</p>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line">Signature of the HOI<br>Name: ______________________<br>Office Seal</div>
+      </div>
+    </div>
+  `);
+}
+
 const DOC_RENDERERS = {
   COVER: docCOVER, SB: docSB, AB: docAB, E: docE, D: docD,
   HRAD: docHRAD, HRAC: docHRAC, NOLIA: docNOLIA, PAYC: docPAYC,
   FLP: docFLP, FLCHO: docFLCHO, APPNOLIA: docAPPNOLIA,
   FLNOLIACPC: docFLNOLIACPC, FLNOLIA: docFLNOLIA, NOLIACERT: docNOLIACERT,
-  RESC: docRESC, CHO: docCHO, CPC: docCPC
+  RESC: docRESC, CHO: docCHO, CPC: docCPC,
+  DECLCASE: docDECLCASE, DECLLOAN: docDECLLOAN
 };
 
 const DOC_LIST = [
@@ -1756,7 +1820,9 @@ const DOC_LIST = [
   { id:"NOLIACERT",   name:"No Liability Certificate",  sub:"To Whom It May Concern" },
   { id:"RESC",        name:"Resolution",                sub:"M.C. / Administrator Order" },
   { id:"CHO",         name:"Charge Hand/Take Over",     sub:"Charge hand over & take over note" },
-  { id:"CPC",         name:"No Liability (UC/SSM)",     sub:"To Whom It May Concern — utilization certificate" }
+  { id:"CPC",         name:"No Liability (UC/SSM)",     sub:"To Whom It May Concern — utilization certificate" },
+  { id:"DECLCASE",    name:"HOI Declaration — Court Case", sub:"Pending case / litigation / claim (DI instruction)" },
+  { id:"DECLLOAN",    name:"HOI Declaration — Loan",    sub:"Outstanding Bank / Teachers' Credit Society loan" }
 ];
 
 /* =========================================================================
@@ -2069,7 +2135,7 @@ function renderSummary(){
 }
 
 // Documents printed on the school's pre-printed letterhead paper: top 7.3 cm left blank
-const LETTERHEAD_DOCS = new Set(["SB","HRAC","NOLIACERT","RESC","CHO","CPC","FLP","FLCHO","FLNOLIACPC","FLNOLIA"]);
+const LETTERHEAD_DOCS = new Set(["SB","HRAC","NOLIACERT","RESC","CHO","CPC","FLP","FLCHO","FLNOLIACPC","FLNOLIA","DECLCASE","DECLLOAN"]);
 function visibleDocs(t){
   const hoi = isApplicantHmOrTic(t);
   const spIn = t.spouseStatus === "IN SERVICE";
