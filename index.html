@@ -1748,11 +1748,11 @@ function docCPC(t,c){
 
 /* --- HOI declarations (D.I. instruction): wording follows Yes/No chosen in Data tab and the date of generation vs. date of retirement --- */
 function declYN(v, yesTxt, noTxt){
-  // v = "YES" / "NO" from the Data tab. If not chosen, show both so the HOI can strike out by hand.
+  // Shows only the option chosen in the Data tab. If nothing is chosen, both are shown with " / " for the HOI to delete by hand.
   const u = String(v||"").toUpperCase();
-  if(u==="YES") return `<s style="color:#666;">${noTxt}</s> <strong>${yesTxt}</strong>`;
-  if(u==="NO")  return `<strong>${noTxt}</strong> <s style="color:#666;">${yesTxt}</s>`;
-  return `<strong>${yesTxt} / ${noTxt}</strong>`;
+  if(u==="YES") return yesTxt;
+  if(u==="NO")  return noTxt;
+  return `${yesTxt} / ${noTxt}`;
 }
 function declIntro(t,c,topic){
   const g=t.gender;
@@ -1789,12 +1789,12 @@ function docDECLCASE(t,c){
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
     ${declIntro(t,c)}
     <ol class="items">
-      <li>There ${declYN(t.declCasePending,"is","is not")} any case pending against ${MrMrs(g)} ${blank(proper(t.staffName))} at any Court of Law.</li>
-      <li>There ${declYN(t.declPostLitigation,"is","is not")} any litigation pending against the post of ${blank(proper(t.designation))} in which ${heshe(g)} ${retired?"worked":"is working"}.</li>
-      <li>There ${declYN(t.declClaimMatter,"is","is not")} any matter related to ${hisHer(g)} claim pending at any Court of Law.</li>
+      <li>${declYN(t.declCasePending,"A case is pending","No case is pending")} against ${MrMrs(g)} ${blank(proper(t.staffName))} at ${declYN(t.declCasePending,"a Court of Law","any Court of Law")}.</li>
+      <li>${declYN(t.declPostLitigation,"Litigation is pending","No litigation is pending")} against the post of ${blank(proper(t.designation))} in which ${heshe(g)} ${retired?"worked":"is working"}.</li>
+      <li>${declYN(t.declClaimMatter,"A matter related to","No matter related to")} ${hisHer(g)} claim is pending at ${declYN(t.declClaimMatter,"a Court of Law","any Court of Law")}.</li>
     </ol>
     ${anyYes ? `<p>Details (Case No., Court, Present Status): ${t.declCaseDetails ? `<strong>${escapeHtml(t.declCaseDetails)}</strong>` : "______________________________________________________________"}</p>` : ``}
-    ${unset ? `<p class="small">[Strike out whichever is not applicable.]</p>` : ``}
+    ${unset ? `<p class="small">[Delete whichever is not applicable.]</p>` : ``}
     ${declFooter()}
   `);
 }
@@ -1810,8 +1810,8 @@ function docDECLLOAN(t,c){
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
     ${declIntro(t,c)}
     <ol class="items">
-      <li>${MrMrs(g)} ${blank(proper(t.staffName))} ${declYN(t.declBankLoan,"has","has no")} outstanding personal loan to any Bank.</li>
-      <li>${MrMrs(g)} ${blank(proper(t.staffName))} ${declYN(t.declSocietyLoan,"has","has no")} outstanding personal loan to any Teachers' Credit Co-operative Society.</li>
+      <li>${MrMrs(g)} ${blank(proper(t.staffName))} ${declYN(t.declBankLoan,"has an outstanding personal loan to a Bank","has no outstanding personal loan to any Bank")}.</li>
+      <li>${MrMrs(g)} ${blank(proper(t.staffName))} ${declYN(t.declSocietyLoan,"has an outstanding personal loan to a Teachers' Credit Co-operative Society","has no outstanding personal loan to any Teachers' Credit Co-operative Society")}.</li>
     </ol>
     ${anyYes ? `<p>Details of loan:</p>
     <table>
@@ -1819,7 +1819,7 @@ function docDECLLOAN(t,c){
       <tr><td>1.</td><td colspan="4">${t.declLoanDetails ? `<strong>${escapeHtml(t.declLoanDetails)}</strong>` : "&nbsp;"}</td></tr>
       <tr><td>2.</td><td></td><td></td><td></td><td></td></tr>
     </table>` : ``}
-    ${unset ? `<p class="small">[Strike out whichever is not applicable.]</p>` : ``}
+    ${unset ? `<p class="small">[Delete whichever is not applicable.]</p>` : ``}
     ${declFooter()}
   `);
 }
