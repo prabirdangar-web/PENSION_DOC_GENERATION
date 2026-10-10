@@ -2271,7 +2271,10 @@ function renderSummary(){
 }
 
 // Documents printed on the school's pre-printed letterhead paper: top 7.3 cm left blank
-const LETTERHEAD_DOCS = new Set(["SB","HRAC","NOLIACERT","RESC","CHO","CPC","FLP","FLCHO","FLNOLIACPC","FLNOLIA","DECLCASE","DECLLOAN","EMPCASE","EMPLOAN"]);
+/* Pre-printed letterhead space (7.3 cm) is reserved ONLY for these docs.
+   NOT required (normal printed header, no blank space): SB (Service Book Certificate), EMPCASE & EMPLOAN (Employee Declarations).
+   Reserved: NOLIACERT (No Liability) and CPC (No Liability - UC/SSM) + the letters below. */
+const LETTERHEAD_DOCS = new Set(["HRAC","NOLIACERT","RESC","CHO","CPC","FLP","FLCHO","FLNOLIACPC","FLNOLIA","DECLCASE","DECLLOAN"]);
 function visibleDocs(t){
   const hoi = isApplicantHmOrTic(t);
   const spIn = t.spouseStatus === "IN SERVICE";
