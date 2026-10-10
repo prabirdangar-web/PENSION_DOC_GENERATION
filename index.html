@@ -1883,7 +1883,7 @@ function docEMPCASE(t,c){
   const anyYes = [t.declCasePending,t.declPostLitigation,t.declClaimMatter].some(v=>String(v||"").toUpperCase()==="YES");
   const unset = [t.declCasePending,t.declPostLitigation,t.declClaimMatter].some(v=>!v);
   return pageWrap(`
-    ${letterhead(t)}
+    
     <h2 class="doc-title">Declaration by the Employee</h2>
     <h3 class="doc-sub">Regarding pendency of Court Case / Litigation</h3>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
@@ -1902,7 +1902,7 @@ function docEMPLOAN(t,c){
   const anyYes = [t.declBankLoan,t.declSocietyLoan].some(v=>String(v||"").toUpperCase()==="YES");
   const unset = [t.declBankLoan,t.declSocietyLoan].some(v=>!v);
   return pageWrap(`
-    ${letterhead(t)}
+    
     <h2 class="doc-title">Declaration by the Employee</h2>
     <h3 class="doc-sub">Regarding Outstanding Personal Loan (Bank / Teachers' Credit Co-operative Society)</h3>
     <p class="ref-line">Ref: Employee ID: ${blank(t.employeeCode)} ; Application ID: ${blank(t.applicationId)}</p>
