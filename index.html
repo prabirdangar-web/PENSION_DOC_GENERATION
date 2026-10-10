@@ -2270,10 +2270,8 @@ function renderSummary(){
   <p class="hint" style="margin-top:14px;">These figures are calculated automatically from the data you entered, using the same formulas as the original workbook (ROPA-19 gratuity &amp; pension rules). Values update live as you edit the Data tab.</p>`;
 }
 
-// Documents printed on the school's pre-printed letterhead paper: top 7.3 cm left blank
-/* Pre-printed letterhead space (7.3 cm) is reserved ONLY for these docs.
-   NOT required (normal printed header, no blank space): SB (Service Book Certificate), EMPCASE & EMPLOAN (Employee Declarations).
-   Reserved: NOLIACERT (No Liability) and CPC (No Liability - UC/SSM) + the letters below. */
+// Documents printed on the school's pre-printed letterhead paper: top 7.3 cm left blank.
+// NOT in this list (print on plain paper, letterhead printed in the page): SB (Service Book Certificates), EMPCASE, EMPLOAN (Employee Declarations)
 const LETTERHEAD_DOCS = new Set(["HRAC","NOLIACERT","RESC","CHO","CPC","FLP","FLCHO","FLNOLIACPC","FLNOLIA","DECLCASE","DECLLOAN"]);
 function visibleDocs(t){
   const hoi = isApplicantHmOrTic(t);
